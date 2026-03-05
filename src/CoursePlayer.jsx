@@ -13,8 +13,10 @@ import {
   Star,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export default function CoursePlayer() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("Overview");
   const [expandedModule, setExpandedModule] = useState(1); // Keeps track of which folder is open
 
@@ -110,7 +112,10 @@ export default function CoursePlayer() {
       <header className="bg-slate-900 text-white sticky top-0 z-50 shadow-md">
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <button className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-bold">
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="text-slate-400 hover:text-white transition-colors flex items-center gap-2 text-sm font-bold"
+            >
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
             </button>
             <div className="hidden md:block h-6 w-px bg-slate-700"></div>

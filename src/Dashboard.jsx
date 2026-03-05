@@ -1,22 +1,22 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
-  Search,
-  Bell,
-  User,
   Play,
   Star,
-  MonitorPlay,
   ChevronRight,
-  BookOpen,
   ArrowRight,
   Award,
   Zap,
-  Shield,
+  ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 export default function Dashboard() {
-  // --- 1. HERO CAROUSEL STATE ---
+  const navigate = useNavigate();
+
   const [currentSlide, setCurrentSlide] = useState(0);
   const slides = [
     {
@@ -47,16 +47,8 @@ export default function Dashboard() {
       bg: "from-orange-400 to-rose-500",
       img: "https://images.unsplash.com/photo-1561070791-2526d30994b5?auto=format&fit=crop&w=600&q=80",
     },
-    {
-      id: 5,
-      title: "Cloud Computing Mastery",
-      desc: "Deploy seamlessly to AWS, Azure, and Google Cloud. Get certified and boost your professional credibility.",
-      bg: "from-teal-400 to-emerald-600",
-      img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80",
-    },
   ];
 
-  // Auto-advance Hero Carousel every 5 seconds
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -64,7 +56,6 @@ export default function Dashboard() {
     return () => clearInterval(timer);
   }, [slides.length]);
 
-  // --- 2. COURSE CAROUSEL STATE ---
   const [activeCategory, setActiveCategory] = useState("Web Development");
   const categories = [
     "Web Development",
@@ -81,7 +72,7 @@ export default function Dashboard() {
       title: "The Complete 2026 Web Development Bootcamp",
       mentor: "Dr. Angela Yu",
       rating: 4.8,
-      price: "$14.99",
+      price: "₹1,499",
       tag: "Bestseller",
     },
     {
@@ -89,7 +80,7 @@ export default function Dashboard() {
       title: "Python for Data Science and Machine Learning",
       mentor: "Jose Portilla",
       rating: 4.7,
-      price: "$12.99",
+      price: "₹1,299",
       tag: "Highest Rated",
     },
     {
@@ -97,7 +88,7 @@ export default function Dashboard() {
       title: "Mastering UI/UX Design with Figma",
       mentor: "Gary Simon",
       rating: 4.9,
-      price: "$15.99",
+      price: "₹1,599",
       tag: "Hot & New",
     },
     {
@@ -105,7 +96,7 @@ export default function Dashboard() {
       title: "The Complete Digital Marketing Course",
       mentor: "Rob Percival",
       rating: 4.6,
-      price: "$13.99",
+      price: "₹1,399",
       tag: "Bestseller",
     },
     {
@@ -113,18 +104,16 @@ export default function Dashboard() {
       title: "Advanced React & Framer Motion",
       mentor: "VSintellecta Mentors",
       rating: 4.9,
-      price: "$19.99",
+      price: "₹1,999",
       tag: "Featured",
     },
   ];
 
-  // Auto-scroll the Courses every 3 seconds
   useEffect(() => {
     const scrollInterval = setInterval(() => {
       if (courseScrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } =
           courseScrollRef.current;
-        // If we reached the end, snap back to start. Otherwise, scroll right by one card (~320px)
         if (scrollLeft + clientWidth >= scrollWidth - 20) {
           courseScrollRef.current.scrollTo({ left: 0, behavior: "smooth" });
         } else {
@@ -133,58 +122,14 @@ export default function Dashboard() {
       }
     }, 3000);
     return () => clearInterval(scrollInterval);
-  }, [activeCategory]); // Reset interval if they change tabs
+  }, [activeCategory]);
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 font-sans overflow-x-hidden">
-      {/* HEADER */}
-      <header className="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 md:px-8 py-3 flex justify-between items-center">
-          <div className="flex items-center gap-8">
-            <div className="flex items-center gap-2 cursor-pointer">
-              <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                <MonitorPlay className="w-5 h-5 text-white ml-0.5" />
-              </div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-slate-900">
-                VS<span className="text-blue-600">intellecta</span>
-              </h1>
-            </div>
-            <div className="hidden lg:flex gap-6 font-semibold text-slate-600 text-sm">
-              <a href="#" className="hover:text-blue-600 transition-colors">
-                Categories
-              </a>
-              <a href="#" className="hover:text-blue-600 transition-colors">
-                Business
-              </a>
-            </div>
-          </div>
-
-          <div className="hidden md:flex flex-1 max-w-xl mx-8">
-            <div className="relative w-full group">
-              <Search className="absolute left-4 top-3 h-4 w-4 text-slate-400 group-focus-within:text-blue-600" />
-              <input
-                type="text"
-                className="block w-full pl-11 pr-4 py-2.5 border border-slate-300 rounded-full bg-slate-50 focus:bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 text-sm transition-all"
-                placeholder="Search for any skill..."
-              />
-            </div>
-          </div>
-
-          <div className="flex items-center gap-5">
-            <button className="text-slate-500 hover:text-blue-600 relative">
-              <Bell className="w-6 h-6" />
-              <span className="absolute -top-1 -right-1 bg-rose-500 w-2.5 h-2.5 rounded-full border-2 border-white"></span>
-            </button>
-            <div className="w-10 h-10 bg-slate-800 text-white rounded-full flex items-center justify-center font-bold cursor-pointer">
-              JD
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-[#FBFBFD] text-slate-800 font-sans overflow-x-hidden">
+      <Header />
 
       <main>
-        {/* 1. HERO CAROUSEL (Announcements & Updates) */}
-        <div className="relative w-full overflow-hidden bg-slate-50 h-[500px] md:h-[450px]">
+        <div className="relative w-full overflow-hidden bg-slate-50 h-[450px]">
           <AnimatePresence mode="wait">
             <motion.div
               key={currentSlide}
@@ -195,7 +140,6 @@ export default function Dashboard() {
               className={`absolute inset-0 bg-gradient-to-r ${slides[currentSlide].bg} text-white flex items-center`}
             >
               <div className="max-w-7xl mx-auto px-6 md:px-12 flex flex-col md:flex-row items-center justify-between w-full relative z-10">
-                {/* Text Content */}
                 <motion.div
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
@@ -216,27 +160,24 @@ export default function Dashboard() {
                   </button>
                 </motion.div>
 
-                {/* Organic Blob Image */}
                 <motion.div
                   initial={{ scale: 0.8, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.4, duration: 0.5 }}
-                  className="w-full md:w-4/8 flex justify-center md:justify-end"
+                  className="w-full md:w-5/12 flex justify-center md:justify-end"
                 >
                   <div
-                    className="w-65 h-65 md:w-80 md:h-80 bg-cover bg-center shadow-2xl overflow-hidden border-4 border-white/20"
+                    className="w-72 h-72 md:w-86 md:h-86 bg-cover bg-center shadow-2xl overflow-hidden border-4 border-white/20"
                     style={{
                       backgroundImage: `url('${slides[currentSlide].img}')`,
-                      // This creates the organic blob shape!
                       borderRadius: "40% 60% 70% 30% / 40% 50% 60% 50%",
                     }}
                   ></div>
                 </motion.div>
               </div>
 
-              {/* White SVG Wave at the bottom */}
               <svg
-                className="absolute bottom-0 w-full h-16 md:h-24 text-[#F8FAFC]"
+                className="absolute bottom-[-1px] w-full h-16 md:h-32 text-[#FBFBFD]"
                 preserveAspectRatio="none"
                 viewBox="0 0 1440 320"
                 fill="currentColor"
@@ -246,7 +187,6 @@ export default function Dashboard() {
             </motion.div>
           </AnimatePresence>
 
-          {/* Carousel Dots */}
           <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
             {slides.map((_, i) => (
               <button
@@ -258,17 +198,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* 2. AUTO-SCROLLING COURSES */}
         <div className="max-w-7xl mx-auto px-6 md:px-12 py-16">
           <h3 className="text-3xl font-extrabold text-slate-900 mb-2">
             A broad selection of courses
           </h3>
           <p className="text-slate-500 font-medium mb-8">
-            Choose from 100,000 online video courses with new additions
-            published every month.
+            Continue your learning journey.
           </p>
 
-          {/* Category Tabs */}
           <div className="flex gap-4 overflow-x-auto hide-scrollbar border-b border-slate-200 mb-8">
             {categories.map((category) => (
               <button
@@ -285,9 +222,8 @@ export default function Dashboard() {
             ))}
           </div>
 
-          {/* Auto-scrolling Wrapper */}
           <motion.div
-            key={activeCategory} // Fades in newly selected category
+            key={activeCategory}
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="flex gap-6 overflow-x-auto pb-6 snap-x snap-mandatory hide-scrollbar"
@@ -296,7 +232,8 @@ export default function Dashboard() {
             {courses.map((course) => (
               <div
                 key={course.id}
-                className="min-w-[280px] max-w-[280px] snap-start bg-white rounded-2xl p-4 shadow-sm border border-slate-200 hover:shadow-xl transition-all cursor-pointer group flex flex-col"
+                onClick={() => navigate("/course")}
+                className="min-w-[280px] max-w-[280px] snap-start bg-white rounded-2xl p-4 shadow-sm border border-slate-200 hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer group flex flex-col"
               >
                 <div
                   className={`w-full h-40 rounded-xl bg-slate-100 relative overflow-hidden mb-4 flex items-center justify-center`}
@@ -314,7 +251,7 @@ export default function Dashboard() {
                     {course.mentor}
                   </p>
                   <div className="flex items-center gap-2 mb-3">
-                    <span className="flex items-center text-amber-600 text-sm font-extrabold">
+                    <span className="flex items-center text-amber-500 text-sm font-extrabold">
                       {course.rating}{" "}
                       <Star className="w-4 h-4 fill-current ml-1" />
                     </span>
@@ -333,65 +270,101 @@ export default function Dashboard() {
           </motion.div>
         </div>
 
-        {/* 3. GLASSY ESSENTIAL SKILLS (Split Layout) */}
-        {/* We use a colorful background here so the glass effect actually has something to blur */}
-        <div className="relative py-20 bg-slate-900 overflow-hidden">
-          <div className="absolute top-[-20%] left-[-10%] w-[500px] h-[500px] bg-blue-500/30 rounded-full blur-[120px]"></div>
-          <div className="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-purple-500/30 rounded-full blur-[150px]"></div>
+        <section className="relative py-24 bg-gradient-to-b from-sky-50 via-sky-100 to-white overflow-hidden">
+          <motion.div
+            animate={{ x: [0, 60, 0], y: [0, 40, 0] }}
+            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-[-10%] left-[-5%] w-[500px] h-[500px] bg-blue-200/50 rounded-full blur-[100px] pointer-events-none"
+          ></motion.div>
+          <motion.div
+            animate={{ x: [0, -50, 0], y: [0, -60, 0] }}
+            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute bottom-[-10%] right-[-5%] w-[600px] h-[600px] bg-cyan-200/50 rounded-full blur-[120px] pointer-events-none"
+          ></motion.div>
 
           <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10 grid grid-cols-1 lg:grid-cols-4 gap-12 items-center">
-            {/* Left Side: Text */}
-            <div className="lg:col-span-1 text-white">
+            <div className="lg:col-span-1 text-slate-900">
               <h2 className="text-4xl font-extrabold mb-4 leading-tight">
                 Learn{" "}
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400 italic">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500 italic">
                   essential
                 </span>{" "}
                 career and life skills
               </h2>
-              <p className="text-slate-300 mb-8 font-medium">
-                VSintellecta helps you build in-demand skills fast and advance
-                your career in a changing job market.
+              <p className="text-slate-600 mb-8 font-medium leading-relaxed">
+                Build in-demand skills fast and advance your career with
+                interactive modules designed for modern learners.
               </p>
-              <button className="bg-white text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-blue-50 transition-colors flex items-center gap-2">
+              <button className="bg-white border border-slate-200 text-slate-900 px-6 py-3 rounded-full font-bold hover:bg-blue-50 hover:border-blue-200 transition-colors flex items-center gap-2 shadow-sm">
                 Explore All Skills <ArrowRight className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Right Side: Glassy Cards */}
             <div className="lg:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
                 {
                   title: "Generative AI",
-                  icon: <Zap className="w-10 h-10 text-amber-400" />,
+                  desc: "Master prompt engineering.",
+                  icon: <Zap className="w-10 h-10 text-amber-500" />,
+                  bg: "from-amber-300 to-orange-400",
+                  floatDelay: 0,
                 },
                 {
                   title: "IT Certifications",
-                  icon: <Award className="w-10 h-10 text-emerald-400" />,
+                  desc: "AWS, Azure & Cloud skills.",
+                  icon: <Award className="w-10 h-10 text-emerald-500" />,
+                  bg: "from-emerald-300 to-teal-400",
+                  floatDelay: 1,
                 },
                 {
                   title: "Data Science",
-                  icon: <Shield className="w-10 h-10 text-blue-400" />,
+                  desc: "Python, SQL & Analytics.",
+                  icon: <ShieldCheck className="w-10 h-10 text-blue-500" />,
+                  bg: "from-blue-300 to-indigo-400",
+                  floatDelay: 2,
                 },
               ].map((card, idx) => (
                 <motion.div
                   key={idx}
-                  whileHover={{ y: -10 }}
-                  className="bg-white/10 backdrop-blur-xl border border-white/20 p-8 rounded-3xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] flex flex-col justify-between h-64 group cursor-pointer"
+                  animate={{ y: [0, -15, 0] }}
+                  transition={{
+                    duration: 4,
+                    delay: card.floatDelay,
+                    repeat: Infinity,
+                    ease: "easeInOut",
+                  }}
+                  className="bg-white/70 backdrop-blur-xl border border-white p-8 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.06)] flex flex-col h-[320px] group cursor-pointer hover:bg-white hover:shadow-[0_20px_40px_rgb(0,0,0,0.1)] transition-all duration-500 relative"
                 >
-                  <div className="bg-white/10 w-20 h-20 rounded-2xl flex items-center justify-center shadow-inner group-hover:scale-110 transition-transform">
+                  <div className="absolute top-6 right-6 text-slate-300 group-hover:text-amber-400 group-hover:rotate-180 transition-all duration-700">
+                    <Sparkles className="w-6 h-6" />
+                  </div>
+
+                  <div
+                    className={`w-20 h-20 bg-gradient-to-br ${card.bg} rounded-[1.5rem] flex items-center justify-center shadow-lg text-white group-hover:scale-110 transition-transform duration-300`}
+                  >
                     {card.icon}
                   </div>
-                  <div className="flex items-center justify-between mt-auto bg-white/5 p-4 rounded-xl border border-white/10 group-hover:bg-white/20 transition-colors">
-                    <span className="text-white font-bold">{card.title}</span>
-                    <ArrowRight className="w-5 h-5 text-white opacity-50 group-hover:opacity-100 transition-opacity" />
+
+                  <div className="mt-6">
+                    <h3 className="text-xl font-extrabold text-slate-900 mb-2">
+                      {card.title}
+                    </h3>
+                    <p className="text-slate-500 font-medium text-sm">
+                      {card.desc}
+                    </p>
+                  </div>
+
+                  <div className="mt-auto pt-4 border-t border-slate-200/60 flex items-center text-blue-600 font-bold gap-2 group-hover:gap-3 transition-all">
+                    Start Learning <ArrowRight className="w-4 h-4" />
                   </div>
                 </motion.div>
               ))}
             </div>
           </div>
-        </div>
+        </section>
       </main>
+
+      <Footer />
     </div>
   );
 }

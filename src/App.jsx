@@ -2,16 +2,21 @@ import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Login from "./Login";
 import Dashboard from "./Dashboard";
-import CoursePlayer from "./CoursePlayer"; // Import our new component!
+import CoursePlayer from "./CoursePlayer";
+import LandingPage from "./LandingPage";
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/dashboard" element={<Dashboard />} />
+        {/* 1. The Landing Page is now the main entry point */}
+        <Route path="/" element={<LandingPage />} />
 
-        {/* NEW ROUTE: The Video Player */}
+        {/* 2. Login gets its own specific page */}
+        <Route path="/login" element={<Login />} />
+
+        {/* 3. The Dashboard and Course Player remain the same */}
+        <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/course" element={<CoursePlayer />} />
       </Routes>
     </BrowserRouter>
