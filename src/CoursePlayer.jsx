@@ -337,7 +337,7 @@ export default function CoursePlayer() {
 
             <div className="flex-1 overflow-y-auto hide-scrollbar z-10 pr-2">
               <div className="relative border-l-2 border-white/10 ml-4 space-y-8 pb-10">
-                {curriculum.map((module, mIdx) => (
+                {curriculum.map((module) => (
                   <div key={module.id} className="relative pl-6">
                     <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#030712] border-2 border-slate-600 flex items-center justify-center">
                       {module.locked ? (

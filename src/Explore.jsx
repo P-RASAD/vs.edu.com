@@ -3,8 +3,6 @@ import {
   Search,
   Star,
   Clock,
-  BookOpen,
-  Filter,
   ChevronDown,
   Play,
   BarChart,
@@ -12,7 +10,7 @@ import {
   Check,
   Sparkles,
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Header from "./components/Header";
 import Footer from "./components/Footer";

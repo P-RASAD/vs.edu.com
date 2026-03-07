@@ -5,7 +5,8 @@ import Login from "./Login";
 import Dashboard from "./Dashboard";
 import CoursePlayer from "./CoursePlayer";
 import AdminDashboard from "./AdminDashboard";
-import Explore from "./Explore"; // <-- Import the new component
+import Explore from "./Explore";
+import YouTube from "./YouTube";
 
 function App() {
   return (
@@ -16,8 +17,8 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/course" element={<CoursePlayer />} />
         <Route path="/admin" element={<AdminDashboard />} />
-
         <Route path="/explore" element={<Explore />} />
+        <Route path="/youtube" element={<YouTube />} />
       </Routes>
     </BrowserRouter>
   );
