@@ -74,18 +74,6 @@ export default function Header() {
               >
                 Log in
               </button>
-              <button
-                onClick={() => navigate("/login")}
-                className="bg-slate-900 hover:bg-blue-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-md transition-all flex items-center gap-1.5"
-              >
-                Join Us <ChevronRight className="w-4 h-4" />
-                </button>
-              <button
-                onClick={() => navigate("/youtube")}
-                className="bg-slate-900 hover:bg-green-600 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-md transition-all flex items-center gap-1.5"
-              >
-                Sujatha Kancharla <ChevronRight className="w-4 h-4" />
-              </button>
             </>
           )}
         </div>
