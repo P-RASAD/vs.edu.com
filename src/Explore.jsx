@@ -320,7 +320,7 @@ export default function Explore() {
                   exit={{ opacity: 0, scale: 0.9 }}
                   transition={{ duration: 0.3 }}
                   key={course.id}
-                  onClick={() => navigate("/course")}
+                  onClick={() => navigate("/course-detail")}
                   className="bg-white rounded-[2rem] p-3 shadow-md border border-slate-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col"
                 >
                   <div

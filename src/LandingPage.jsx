@@ -303,11 +303,8 @@ export default function LandingPage() {
                 </div>
 
                 <div className="flex gap-4 mt-auto">
-                  <button className="flex-1 bg-white border-2 border-slate-200 hover:border-blue-600 text-slate-800 font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-colors">
-                    <ShoppingCart className="w-5 h-5" /> Add to Cart
-                  </button>
                   <button className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-6 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 transition-colors">
-                    <CreditCard className="w-5 h-5" /> Buy Now
+                    Login to Enroll <ShoppingCart className="w-4 h-4" />
                   </button>
                 </div>
               </div>

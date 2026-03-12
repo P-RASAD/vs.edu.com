@@ -6,7 +6,10 @@ import Dashboard from "./Dashboard";
 import CoursePlayer from "./CoursePlayer";
 import AdminDashboard from "./AdminDashboard";
 import Explore from "./Explore";
-import YouTube from "./YouTube";
+import Profile from "./Profile";
+import Checkout from "./Checkout";
+import CourseDetail from "./CourseDetail";
+import SuperAdmin from "./SuperAdmin";
 
 function App() {
   return (
@@ -16,9 +19,13 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/course" element={<CoursePlayer />} />
-        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/user" element={<AdminDashboard />} />
         <Route path="/explore" element={<Explore />} />
-        <Route path="/youtube" element={<YouTube />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/course-detail" element={<CourseDetail />} />
+
+        <Route path="/super-admin" element={<SuperAdmin />} />
       </Routes>
     </BrowserRouter>
   );
