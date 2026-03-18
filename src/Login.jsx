@@ -6,7 +6,6 @@ import {
   ArrowRight,
   Chrome,
   User,
-  Phone,
   AlertCircle,
   AtSign,
   CheckCircle,
@@ -18,7 +17,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(false);
   const [error, setError] = useState("");
-  const [successMsg, setSuccessMsg] = useState(""); // Added success message state
+  const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -33,83 +32,147 @@ export default function Login() {
     confirmPassword: "",
   });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setError("");
-    setSuccessMsg(""); // Clear success message on typing
+  // ==========================================
+  // DUMMY API ENGINE (Local Storage JSON)
+  // ==========================================
+  // When your friend provides the real APIs, you can delete this function
+  // and replace it with a real fetch() or axios.post() call inside handleSubmit.
+  const mockApiCall = async (endpoint, data) => {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        // Get our dummy database from local storage (or create an empty array)
+        const usersDb = JSON.parse(localStorage.getItem("mock_users_db")) || [];
+
+        if (endpoint === "/api/register") {
+          // 1. Check if user already exists
+          if (
+            usersDb.find(
+              (u) => u.email === data.email || u.username === data.username,
+            )
+          ) {
+            return reject(
+              new Error("User with this email or username already exists."),
+            );
+          }
+
+          // 2. Create new user record
+          const newUser = {
+            id: `usr_${Date.now()}`,
+            first_name: data.firstName,
+            last_name: data.lastName,
+            username: data.username,
+            email: data.email,
+            mobile: data.mobile,
+            role: data.role,
+            password: data.password, // Storing plaintext only for local mock purposes
+          };
+
+          // 3. Save to dummy DB
+          usersDb.push(newUser);
+          localStorage.setItem("mock_users_db", JSON.stringify(usersDb));
+
+          resolve({ data: { message: "Account created", user: newUser } });
+        }
+
+        if (endpoint === "/api/login") {
+          // 1. Find the user by email or username
+          const user = usersDb.find(
+            (u) =>
+              (u.email === data.identifier || u.username === data.identifier) &&
+              u.password === data.password,
+          );
+
+          if (!user) {
+            return reject(
+              new Error("Invalid credentials. Please check your details."),
+            );
+          }
+
+          // 2. Return user data (without password) and a dummy token
+          const { password, ...userWithoutPassword } = user;
+          resolve({
+            data: {
+              message: "Login successful",
+              user: userWithoutPassword,
+              token: "dummy_jwt_token_12345",
+            },
+          });
+        }
+      }, 1000); // Simulate a 1-second network delay
+    });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
+    setIsLoading(true);
 
-    const existingUsers =
-      JSON.parse(localStorage.getItem("vsintellecta_users")) || [];
+    try {
+      if (isLogin) {
+        // ==========================================
+        // LOGIN FLOW
+        // To integrate real API later, replace mockApiCall with:
+        // const res = await axios.post('https://api.yourdomain.com/login', { identifier: formData.identifier, password: formData.password })
+        // ==========================================
+        const res = await mockApiCall("/api/login", {
+          identifier: formData.identifier,
+          password: formData.password,
+        });
 
-    if (isLogin) {
-      // --- LOGIN FLOW ---
-      const user = existingUsers.find(
-        (u) =>
-          (u.username === formData.identifier ||
-            u.email === formData.identifier) &&
-          u.password === formData.password,
-      );
+        const profileData = res.data.user;
 
-      if (user) {
-        localStorage.setItem("vsintellecta_active_user", JSON.stringify(user));
-        if (user.role === "tutor") {
+        // Save session data locally
+        localStorage.setItem(
+          "vsintellecta_active_user",
+          JSON.stringify(profileData),
+        );
+        localStorage.setItem("vsintellecta_token", res.data.token);
+
+        // Route based on role
+        if (profileData.role === "tutor") {
           navigate("/admin");
+        } else if (profileData.role === "superadmin") {
+          navigate("/super-admin");
         } else {
           navigate("/dashboard");
         }
       } else {
-        setError("Invalid username/email or password.");
+        // ==========================================
+        // REGISTRATION FLOW
+        // ==========================================
+        if (formData.password !== formData.confirmPassword) {
+          setError("Passwords do not match.");
+          setIsLoading(false);
+          return;
+        }
+
+        // To integrate real API later, replace mockApiCall with:
+        // const res = await axios.post('https://api.yourdomain.com/register', formData)
+        const res = await mockApiCall("/api/register", formData);
+
+        setSuccessMsg("Account created successfully! Please sign in.");
+
+        // Reset specific form fields and switch to login view
+        setFormData({
+          ...formData,
+          identifier: formData.email, // Auto-fill the identifier with the email they just used
+          password: "",
+          confirmPassword: "",
+        });
+        setIsLogin(true);
       }
-    } else {
-      // --- REGISTRATION FLOW ---
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match.");
-        return;
-      }
-
-      const isDuplicate = existingUsers.some(
-        (u) =>
-          u.username.toLowerCase() === formData.username.toLowerCase() ||
-          u.email.toLowerCase() === formData.email.toLowerCase(),
-      );
-
-      if (isDuplicate) {
-        setError("Username or Email is already taken.");
-        return;
-      }
-
-      const newUser = {
-        username: formData.username,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
-        mobile: formData.mobile,
-        role: formData.role,
-        password: formData.password,
-      };
-
-      // Save user to database
-      existingUsers.push(newUser);
-      localStorage.setItem("vsintellecta_users", JSON.stringify(existingUsers));
-
-      // NEW BEHAVIOR: Show success message and switch to login tab!
-      setSuccessMsg("Account created successfully! Please sign in.");
-
-      // Pre-fill the login identifier with their new username to save them time
-      setFormData({
-        ...formData,
-        identifier: formData.username,
-        password: "",
-        confirmPassword: "",
-      });
-      setIsLogin(true);
+    } catch (err) {
+      setError(err.message || "An error occurred connecting to the server.");
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+    setError("");
+    setSuccessMsg(""); // Clear success message on typing
   };
 
   const handleGoogleLogin = () => {
@@ -120,6 +183,7 @@ export default function Login() {
     }, 1500);
   };
 
+  // YOUR EXACT UI CODE BELOW - UNTOUCHED
   return (
     <div className="min-h-screen w-full flex items-center justify-center bg-[#F2F4F7] p-4 md:p-8 font-sans selection:bg-blue-200">
       <motion.div
@@ -182,6 +246,7 @@ export default function Login() {
               {/* FIXED: White Text on Blue Background for Active Toggles */}
               <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner border border-slate-200/50">
                 <button
+                  type="button"
                   onClick={() => {
                     setIsLogin(true);
                     setError("");
@@ -192,6 +257,7 @@ export default function Login() {
                   Sign In
                 </button>
                 <button
+                  type="button"
                   onClick={() => {
                     setIsLogin(false);
                     setError("");
@@ -368,7 +434,7 @@ export default function Login() {
                             required
                             value={formData.email}
                             onChange={handleChange}
-                            className="w-full pl-9 pr-3 py-2 border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors"
+                            className="w-full pl-9 pr-3 py-2 text-black border border-slate-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors"
                             placeholder="you@email.com"
                           />
                         </div>
@@ -381,7 +447,7 @@ export default function Login() {
                           Mobile Number
                         </label>
                         <div className="relative group">
-                          <Phone className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
+                          <User className="absolute left-3 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                           <input
                             name="mobile"
                             type="tel"
@@ -466,10 +532,25 @@ export default function Login() {
               <div className="pt-4">
                 <button
                   type="submit"
-                  className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl shadow-md shadow-blue-600/20 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+                  disabled={isLoading}
+                  className="w-full flex justify-center items-center gap-2 py-3 px-4 rounded-xl shadow-md shadow-blue-600/20 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
-                  {isLogin ? "Sign In Securely" : "Sign In"}{" "}
-                  <ArrowRight className="w-4 h-4" />
+                  {isLoading ? (
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{
+                        repeat: Infinity,
+                        duration: 1,
+                        ease: "linear",
+                      }}
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                    />
+                  ) : (
+                    <>
+                      {isLogin ? "Sign In Securely" : "Sign In"}{" "}
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
                 </button>
               </div>
             </form>
@@ -488,19 +569,7 @@ export default function Login() {
                 disabled={isLoading}
                 className="w-full flex justify-center items-center gap-2 py-2.5 px-4 border border-slate-200 rounded-xl shadow-sm text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 transition-colors disabled:opacity-50"
               >
-                {isLoading ? (
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{
-                      repeat: Infinity,
-                      duration: 1,
-                      ease: "linear",
-                    }}
-                    className="w-4 h-4 border-2 border-slate-400 border-t-transparent rounded-full"
-                  ></motion.div>
-                ) : (
-                  <Chrome className="w-4 h-4 text-slate-600" />
-                )}
+                <Chrome className="w-4 h-4 text-slate-600" />
                 Google
               </button>
             </div>

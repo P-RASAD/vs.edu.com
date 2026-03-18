@@ -7,11 +7,8 @@ import {
   X,
   CheckCircle,
   Zap,
-  ShieldAlert,
-  BookOpen,
   ChevronDown,
   User,
-  Settings,
   LogOut,
   LayoutDashboard,
   TrendingUp,
@@ -34,8 +31,18 @@ export default function Header() {
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
-    const user = localStorage.getItem("vsintellecta_active_user");
-    if (user) setActiveUser(JSON.parse(user));
+
+    // Fetch user and make sure it doesn't crash if data is weird
+    try {
+      const userStr = localStorage.getItem("vsintellecta_active_user");
+      if (userStr) {
+        const parsedUser = JSON.parse(userStr);
+        setActiveUser(parsedUser);
+      }
+    } catch (e) {
+      console.error("Failed to parse user from local storage");
+    }
+
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location]);
 
@@ -76,10 +83,19 @@ export default function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem("vsintellecta_active_user");
+    localStorage.removeItem("vsintellecta_token");
     setActiveUser(null);
     setIsProfileOpen(false);
     navigate("/login");
   };
+
+  // --- BULLETPROOF SAFE DATA EXTRACTION ---
+  // Safely grab names, checking for both camelCase and snake_case variations
+  const fName = activeUser?.firstName || activeUser?.first_name || "User";
+  const lName = activeUser?.lastName || activeUser?.last_name || "";
+  const initial1 = fName.charAt(0).toUpperCase();
+  const initial2 = lName ? lName.charAt(0).toUpperCase() : "";
+  const role = activeUser?.role || "learner";
 
   return (
     <>
@@ -272,10 +288,12 @@ export default function Header() {
                   onMouseEnter={() => setIsProfileOpen(true)}
                   onMouseLeave={() => setIsProfileOpen(false)}
                 >
+                  {/* SAFE AVATAR RENDER */}
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-black text-sm cursor-pointer shadow-md border-2 border-white">
-                    {activeUser.firstName[0]}
-                    {activeUser.lastName[0]}
+                    {initial1}
+                    {initial2}
                   </div>
+
                   <AnimatePresence>
                     {isProfileOpen && (
                       <motion.div
@@ -287,19 +305,15 @@ export default function Header() {
                       >
                         <div className="px-5 py-3 border-b border-slate-100 mb-2">
                           <p className="text-sm font-extrabold text-slate-900">
-                            {activeUser.firstName} {activeUser.lastName}
+                            {fName} {lName}
                           </p>
                           <p className="text-xs font-bold text-slate-500">
-                            @{activeUser.username}
+                            @{activeUser?.username || "user"}
                           </p>
                         </div>
                         <div
                           onClick={() =>
-                            navigate(
-                              activeUser.role === "tutor"
-                                ? "/admin"
-                                : "/dashboard",
-                            )
+                            navigate(role === "tutor" ? "/admin" : "/dashboard")
                           }
                           className="flex items-center gap-3 px-5 py-2.5 hover:bg-blue-50 cursor-pointer group"
                         >
@@ -334,8 +348,14 @@ export default function Header() {
                 </div>
               </>
             ) : (
-              /* Logged Out State (Now with EXPLICIT Login Button) */
+              /* Logged Out State */
               <div className="flex items-center gap-2 sm:gap-4">
+                <button
+                  onClick={() => navigate("/login")}
+                  className="hidden sm:block text-sm font-extrabold text-slate-700 hover:text-blue-600 transition-colors px-2 py-2"
+                >
+                  Log In
+                </button>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
@@ -389,7 +409,7 @@ export default function Header() {
                 <>
                   <button
                     onClick={() => {
-                      navigate("/dashboard");
+                      navigate(role === "tutor" ? "/admin" : "/dashboard");
                       setIsMobileMenuOpen(false);
                     }}
                     className="text-left py-2 border-b border-slate-100 text-blue-600"
@@ -438,16 +458,6 @@ export default function Header() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes shimmer {
-          100% { transform: translateX(100%); }
-        }
-      `,
-        }}
-      />
     </>
   );
 }

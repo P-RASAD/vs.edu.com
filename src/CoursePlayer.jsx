@@ -1,456 +1,469 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  ChevronLeft,
   PlayCircle,
   CheckCircle,
-  Lock,
+  Circle,
+  ArrowLeft,
+  Menu,
+  X,
   MessageSquare,
   FileText,
   Download,
-  Star,
-  Share2,
+  ChevronDown,
+  Award,
+  FolderOpen,
   MonitorPlay,
-  Zap,
-  Layers,
-  Play,
+  Bookmark,
+  Share2,
+  Clock,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import Header from "./components/Header";
 
 export default function CoursePlayer() {
   const navigate = useNavigate();
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
-  const [expandedModules, setExpandedModules] = useState(["m1", "m2"]);
+  const [expandedSection, setExpandedSection] = useState("s1"); // Open first folder by default
 
-  // Mock Course Data
+  // Track active video
+  const [activeVideo, setActiveVideo] = useState({
+    id: 1,
+    title: "1. Welcome to the Masterclass",
+    url: "https://www.youtube.com/embed/e3dA11TlfnU", // Placeholder video
+    duration: "10:24",
+    completed: true,
+    desc: "In this introductory lesson, we will cover the foundational strategy required to tackle this course and set you up for success.",
+  });
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+    if (window.innerWidth < 1024) setIsSidebarOpen(false);
+  }, []);
+
+  // --- STRUCTURED COURSE DATA (Folders & Videos) ---
   const courseData = {
-    title: "Master React & Next.js Architecture",
-    instructor: "Career Guide",
-    progress: 35,
-    rating: 4.9,
-    students: "12,450",
-  };
-
-  // Curriculum with videos from @careerguide2763
-  const curriculum = [
-    {
-      id: "m1",
-      title: "Phase 1: Architecture",
-      duration: "45 min",
-      lessons: [
-        {
-          id: "v1",
-          title: "The Mental Model",
-          duration: "5:00",
-          completed: true,
-          videoUrl: "https://www.youtube.com/embed/7AvYL8R7XlI",
-        },
-        {
-          id: "v2",
-          title: "Environment Engineering",
-          duration: "15:30",
-          completed: true,
-          videoUrl: "https://www.youtube.com/embed/7AvYL8R7XlI",
-        },
-      ],
-    },
-    {
-      id: "m2",
-      title: "Phase 2: State Mechanics",
-      duration: "2 hr 15 min",
-      lessons: [
-        {
-          id: "v4",
-          title: "Complex State & Props",
-          duration: "25:00",
-          completed: false,
-          videoUrl: "https://www.youtube.com/embed/7AvYL8R7XlI",
-        },
-        {
-          id: "v5",
-          title: "Side Effects & Lifecycles",
-          duration: "30:00",
-          completed: false,
-          videoUrl: "https://www.youtube.com/embed/7AvYL8R7XlI",
-        },
-      ],
-    },
-    {
-      id: "m3",
-      title: "Phase 3: Advanced Patterns",
-      duration: "3 hr 40 min",
-      locked: true,
-      lessons: [
-        {
-          id: "v7",
-          title: "Context API Integration",
-          duration: "45:00",
-          completed: false,
-          videoUrl: "",
-        },
-        {
-          id: "v8",
-          title: "Custom Hooks Mastery",
-          duration: "55:00",
-          completed: false,
-          videoUrl: "",
-        },
-      ],
-    },
-  ];
-
-  const [currentVideo, setCurrentVideo] = useState(curriculum[1].lessons[0]);
-
-  const toggleModule = (id) => {
-    setExpandedModules((prev) =>
-      prev.includes(id) ? prev.filter((m) => m !== id) : [...prev, id],
-    );
+    title: "Advanced React Patterns & Architecture",
+    progress: 12,
+    instructor: "VSintellecta Premium",
+    curriculum: [
+      {
+        id: "s1",
+        title: "Section 1: The Foundation",
+        totalTime: "45m",
+        videos: [
+          {
+            id: 1,
+            title: "1. Welcome to the Masterclass",
+            duration: "10:24",
+            completed: true,
+            url: "https://www.youtube.com/embed/e3dA11TlfnU",
+          },
+          {
+            id: 2,
+            title: "2. Setting up the Environment",
+            duration: "15:12",
+            completed: true,
+            url: "https://www.youtube.com/embed/7AvYL8R7XlI",
+          },
+          {
+            id: 3,
+            title: "3. React 19 Core Concepts",
+            duration: "20:30",
+            completed: false,
+            url: "https://www.youtube.com/embed/Lk6K9BgzpPw",
+          },
+        ],
+      },
+      {
+        id: "s2",
+        title: "Section 2: Advanced Hooks & State",
+        totalTime: "1h 12m",
+        videos: [
+          {
+            id: 4,
+            title: "4. Mastering useMemo & useCallback",
+            duration: "25:00",
+            completed: false,
+            url: "https://www.youtube.com/embed/zhpcgpqWc1Q",
+          },
+          {
+            id: 5,
+            title: "5. Custom Hooks Architecture",
+            duration: "47:00",
+            completed: false,
+            url: "https://www.youtube.com/embed/e3dA11TlfnU",
+          },
+        ],
+      },
+      {
+        id: "s3",
+        title: "Section 3: Framer Motion & Animations",
+        totalTime: "2h 15m",
+        videos: [
+          {
+            id: 6,
+            title: "6. Introduction to Spring Physics",
+            duration: "35:00",
+            completed: false,
+            url: "https://www.youtube.com/embed/7AvYL8R7XlI",
+          },
+          {
+            id: 7,
+            title: "7. Building a Layout Animation",
+            duration: "55:00",
+            completed: false,
+            url: "https://www.youtube.com/embed/Lk6K9BgzpPw",
+          },
+          {
+            id: 8,
+            title: "8. Complex SVG Path Tracing",
+            duration: "45:00",
+            completed: false,
+            url: "https://www.youtube.com/embed/zhpcgpqWc1Q",
+          },
+        ],
+      },
+    ],
   };
 
   return (
-    <div className="h-screen w-full bg-[#030712] text-slate-300 font-sans overflow-hidden selection:bg-cyan-500/30 relative flex flex-col">
+    // We use a dark theme specifically for the player so the video pops (Theater Mode)
+    <div className="min-h-screen bg-[#0A0A0A] text-slate-300 font-sans flex flex-col overflow-hidden selection:bg-blue-500/30">
       {/* ========================================== */}
-      {/* 1. CINEMATIC AMBIENT BACKGROUND              */}
+      {/* 1. CINEMATIC TOP NAVBAR                    */}
       {/* ========================================== */}
-      <div className="absolute inset-0 z-0 pointer-events-none flex justify-center items-center overflow-hidden">
-        <motion.div
-          animate={{ scale: [1, 1.2, 1], opacity: [0.1, 0.3, 0.1] }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute w-[80vw] h-[80vw] max-w-[1000px] max-h-[1000px] bg-blue-600/20 rounded-full blur-[150px]"
-        ></motion.div>
-        <motion.div
-          animate={{ scale: [1.2, 1, 1.2], opacity: [0.1, 0.2, 0.1] }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute w-[60vw] h-[60vw] max-w-[800px] max-h-[800px] bg-cyan-500/10 rounded-full blur-[150px]"
-        ></motion.div>
-      </div>
-
-      {/* ========================================== */}
-      {/* 2. FLOATING HOLOGRAPHIC COMMAND BAR          */}
-      {/* ========================================== */}
-      <motion.header
-        initial={{ y: -50, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
-        className="absolute top-6 left-1/2 transform -translate-x-1/2 w-[95%] max-w-7xl h-16 bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-full z-50 flex items-center justify-between px-2 pr-6 shadow-[0_10px_40px_rgba(0,0,0,0.5)]"
-      >
+      <header className="h-16 bg-[#111111] border-b border-white/10 flex items-center justify-between px-4 sm:px-6 shrink-0 z-20">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate("/dashboard")}
-            className="flex items-center justify-center w-12 h-12 rounded-full bg-white/5 hover:bg-white/10 text-white transition-colors border border-white/5 group"
+            onClick={() => navigate(-1)}
+            className="p-2 hover:bg-white/10 rounded-full text-slate-400 hover:text-white transition-colors group"
           >
-            <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
           </button>
-          <div className="w-px h-6 bg-white/10 mx-2"></div>
-          <h1 className="text-white font-extrabold text-lg tracking-tight hidden sm:block">
-            {courseData.title}
-          </h1>
+          <div className="hidden sm:block border-l border-white/10 h-8 mr-2"></div>
+          <div>
+            <h1 className="text-sm sm:text-base font-bold text-white truncate max-w-[200px] sm:max-w-md leading-tight">
+              {courseData.title}
+            </h1>
+            <p className="text-[10px] font-medium text-slate-500 uppercase tracking-widest">
+              {courseData.instructor}
+            </p>
+          </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-4">
-            <span className="text-xs font-black text-cyan-400 uppercase tracking-widest">
-              {courseData.progress}%{" "}
-              <span className="text-slate-500">SYNCED</span>
+        <div className="flex items-center gap-4 md:gap-6">
+          {/* Progress Indicator */}
+          <div className="hidden md:flex items-center gap-3 bg-white/5 px-4 py-1.5 rounded-full border border-white/10">
+            <Award className="w-4 h-4 text-blue-400" />
+            <div className="flex flex-col">
+              <div className="w-24 h-1 bg-white/10 rounded-full overflow-hidden mb-1">
+                <div
+                  className="h-full bg-blue-500 rounded-full"
+                  style={{ width: `${courseData.progress}%` }}
+                ></div>
+              </div>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                {courseData.progress}% Completed
+              </span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="flex items-center gap-2 text-sm font-bold text-white hover:bg-white/10 transition-colors bg-white/5 border border-white/10 px-4 py-2 rounded-lg"
+          >
+            {isSidebarOpen ? (
+              <X className="w-4 h-4" />
+            ) : (
+              <Menu className="w-4 h-4" />
+            )}
+            <span className="hidden sm:block">
+              {isSidebarOpen ? "Close Syllabus" : "Open Syllabus"}
             </span>
-            <div className="w-24 md:w-32 h-1.5 bg-white/10 rounded-full overflow-hidden border border-white/5">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${courseData.progress}%` }}
-                transition={{ duration: 1.5, ease: "easeOut" }}
-                className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full shadow-[0_0_10px_rgba(6,182,212,0.8)]"
-              ></motion.div>
-            </div>
-          </div>
-          <button className="hidden md:flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2 rounded-full text-sm font-bold transition-colors border border-white/10">
-            <Share2 className="w-4 h-4" /> Share
           </button>
         </div>
-      </motion.header>
+      </header>
 
       {/* ========================================== */}
-      {/* 3. MAIN ARENA: SPATIAL LAYOUT                */}
+      {/* 2. MAIN PLAYER & SIDEBAR LAYOUT            */}
       {/* ========================================== */}
-      <div className="flex-1 w-full max-w-[1600px] mx-auto pt-28 pb-8 px-4 md:px-8 flex flex-col lg:flex-row gap-8 relative z-10 overflow-hidden">
-        {/* LEFT COLUMN: Video Engine & Knowledge Base */}
-        <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto hide-scrollbar space-y-6 pb-20">
-          {/* Ambilight Video Container */}
-          <div className="relative group rounded-[2.5rem] p-1">
-            <div className="absolute inset-0 bg-gradient-to-b from-blue-500/20 to-cyan-500/20 rounded-[2.5rem] blur-md group-hover:blur-xl transition-all duration-500"></div>
-
-            <div className="w-full aspect-video bg-black rounded-[2.2rem] overflow-hidden relative z-10 border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.8)]">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentVideo.id}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.4 }}
-                  className="w-full h-full relative"
-                >
-                  <iframe
-                    src={currentVideo.videoUrl}
-                    title="Course Video"
-                    className="w-full h-full absolute inset-0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
-                </motion.div>
-              </AnimatePresence>
-            </div>
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* LEFT AREA: Video & Tabs */}
+        <div
+          className={`flex-1 flex flex-col h-full overflow-y-auto hide-scrollbar transition-all duration-500 ease-in-out ${isSidebarOpen ? "lg:pr-[400px]" : ""}`}
+        >
+          {/* A. 16:9 Video Player Container */}
+          <div className="w-full bg-black aspect-video relative shadow-2xl border-b border-white/5">
+            <iframe
+              src={activeVideo.url}
+              title={activeVideo.title}
+              className="absolute inset-0 w-full h-full border-0"
+              allowFullScreen
+            ></iframe>
           </div>
 
-          {/* Interactive Knowledge Base */}
-          <div className="w-full bg-white/[0.02] backdrop-blur-xl border border-white/[0.05] rounded-[2rem] p-8 shrink-0 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-px bg-gradient-to-r from-transparent via-white/20 to-transparent"></div>
+          {/* B. Content Area (Below Video) */}
+          <div className="max-w-5xl w-full mx-auto p-6 sm:p-10 pb-24">
+            <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8">
+              <div>
+                <h2 className="text-2xl sm:text-3xl font-black text-white leading-tight mb-2">
+                  {activeVideo.title}
+                </h2>
+                <div className="flex items-center gap-4 text-xs font-bold text-slate-400">
+                  <span className="flex items-center gap-1.5">
+                    <MonitorPlay className="w-4 h-4" /> Video Lesson
+                  </span>
+                  <span className="flex items-center gap-1.5">
+                    <Clock className="w-4 h-4" /> {activeVideo.duration}
+                  </span>
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 text-slate-300 transition-colors">
+                  <Bookmark className="w-4 h-4" />
+                </button>
+                <button className="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-white/10 text-slate-300 transition-colors">
+                  <Share2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
 
-            <div className="flex items-center gap-2 mb-8 border-b border-white/5 pb-6 overflow-x-auto hide-scrollbar">
+            {/* Smooth Animated Tabs */}
+            <div className="flex gap-8 border-b border-white/10 mb-8 overflow-x-auto hide-scrollbar">
               {[
                 {
                   id: "overview",
-                  label: "Briefing",
-                  icon: <MonitorPlay className="w-4 h-4" />,
+                  label: "Overview",
+                  icon: <FileText className="w-4 h-4" />,
                 },
                 {
-                  id: "qa",
-                  label: "Comms",
+                  id: "qna",
+                  label: "Discussion & Q&A",
                   icon: <MessageSquare className="w-4 h-4" />,
                 },
                 {
-                  id: "resources",
-                  label: "Data Modules",
+                  id: "downloads",
+                  label: "Resources",
                   icon: <Download className="w-4 h-4" />,
                 },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-2 px-6 py-2.5 rounded-full text-sm font-bold transition-all relative ${
-                    activeTab === tab.id
-                      ? "text-cyan-400 bg-cyan-400/10 border border-cyan-400/20"
-                      : "text-slate-500 hover:text-white border border-transparent"
-                  }`}
+                  className={`flex items-center gap-2 pb-4 text-sm font-bold whitespace-nowrap relative transition-colors ${activeTab === tab.id ? "text-white" : "text-slate-500 hover:text-slate-300"}`}
                 >
                   {tab.icon} {tab.label}
+                  {activeTab === tab.id && (
+                    <motion.div
+                      layoutId="playertab"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500"
+                    ></motion.div>
+                  )}
                 </button>
               ))}
             </div>
 
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3 }}
-            >
+            {/* Tab Content Rendering */}
+            <AnimatePresence mode="wait">
               {activeTab === "overview" && (
-                <div className="space-y-6">
-                  <h2 className="text-2xl font-black text-white tracking-tight flex items-center gap-3">
-                    <Zap className="w-6 h-6 text-amber-400" /> Current Sector:{" "}
-                    {currentVideo.title}
-                  </h2>
-                  <p className="text-slate-400 leading-relaxed font-medium">
-                    This module engages core mechanics and job strategies
-                    provided by Career Guide. Ensure your environment is fully
-                    synced before executing the build sequence.
+                <motion.div
+                  key="overview"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <p className="text-slate-300 leading-relaxed font-medium text-sm md:text-base">
+                    {activeVideo.desc ||
+                      "In this module, we will explore the core concepts necessary to master this topic. Follow along with the code editor and make sure to download the attached resources."}
                   </p>
-
-                  <div className="bg-black/40 border border-white/5 p-4 rounded-2xl flex items-center gap-4 w-fit pr-8 mt-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-full flex items-center justify-center text-white font-black shadow-[0_0_15px_rgba(6,182,212,0.4)]">
-                      CG
-                    </div>
-                    <div>
-                      <p className="text-xs text-slate-500 uppercase tracking-widest font-black mb-0.5">
-                        Transmitting From
-                      </p>
-                      <h4 className="text-white font-bold">
-                        {courseData.instructor}
-                      </h4>
-                    </div>
-                  </div>
-                </div>
+                </motion.div>
               )}
 
-              {activeTab === "qa" && (
-                <div className="flex flex-col items-center justify-center py-10 text-center">
-                  <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-full flex items-center justify-center mb-4">
-                    <MessageSquare className="w-6 h-6 text-slate-400" />
+              {activeTab === "qna" && (
+                <motion.div
+                  key="qna"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="space-y-6"
+                >
+                  <div className="flex gap-3">
+                    <input
+                      type="text"
+                      placeholder="Search or ask a question..."
+                      className="flex-1 bg-[#111] border border-white/10 rounded-xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:border-blue-500 text-white placeholder-slate-600"
+                    />
+                    <button className="bg-blue-600 text-white px-6 py-3.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-colors shrink-0 shadow-lg shadow-blue-500/20">
+                      Ask Question
+                    </button>
                   </div>
-                  <h3 className="text-xl font-bold text-white mb-2">
-                    Establish Communications
-                  </h3>
-                  <p className="text-slate-500 mb-6 text-sm">
-                    Open a secure channel to discuss this module with peers.
-                  </p>
-                  <button className="bg-white/10 hover:bg-white/20 border border-white/10 text-white px-6 py-2.5 rounded-full font-bold transition-all flex items-center gap-2">
-                    <Zap className="w-4 h-4" /> Start Thread
-                  </button>
-                </div>
-              )}
-
-              {activeTab === "resources" && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { name: "Career_Map.pdf", size: "2.4 MB" },
-                    { name: "Study_Materials.zip", size: "15.1 MB" },
-                  ].map((res, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center justify-between p-5 bg-black/40 border border-white/5 rounded-2xl hover:border-white/20 transition-all group cursor-pointer"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 bg-cyan-500/10 text-cyan-400 rounded-xl flex items-center justify-center border border-cyan-500/20">
-                          <FileText className="w-5 h-5" />
+                  <div className="space-y-6 pt-6">
+                    {/* Mock Q&A Thread */}
+                    <div className="border-b border-white/5 pb-6">
+                      <div className="flex gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center font-black text-white text-sm">
+                          AS
                         </div>
                         <div>
-                          <p className="text-white font-bold text-sm">
-                            {res.name}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1 uppercase tracking-widest">
-                            {res.size}
+                          <h4 className="font-bold text-white text-sm">
+                            Alex Sharma
+                          </h4>
+                          <p className="text-xs text-slate-500 font-medium">
+                            Lecture 1 • 2 days ago
                           </p>
                         </div>
                       </div>
-                      <button className="text-slate-500 group-hover:text-cyan-400 transition-colors">
-                        <Download className="w-5 h-5" />
+                      <p className="text-sm text-slate-300 mb-4 pl-13">
+                        Why do we use `useMemo` here instead of just moving the
+                        variable outside the component?
+                      </p>
+                      <button className="text-xs font-bold text-blue-400 hover:text-blue-300 flex items-center gap-1.5 pl-13">
+                        <MessageSquare className="w-3.5 h-3.5" /> View
+                        Instructor Reply
                       </button>
                     </div>
-                  ))}
-                </div>
+                  </div>
+                </motion.div>
               )}
-            </motion.div>
+
+              {activeTab === "downloads" && (
+                <motion.div
+                  key="downloads"
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                >
+                  <div className="bg-[#111] border border-white/10 rounded-2xl p-5 flex items-center justify-between hover:border-white/20 transition-colors cursor-pointer group">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-white/5 rounded-xl flex items-center justify-center text-blue-400">
+                        <FileText className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">
+                          Lecture Slide Notes
+                        </h4>
+                        <p className="text-xs font-medium text-slate-500 mt-1">
+                          2.4 MB • PDF Document
+                        </p>
+                      </div>
+                    </div>
+                    <button className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center text-white group-hover:bg-blue-600 transition-colors">
+                      <Download className="w-4 h-4" />
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: The Skill Tree Curriculum */}
-        <div className="w-full lg:w-[400px] h-full flex flex-col shrink-0 relative z-10 pb-20">
-          <div className="w-full h-full bg-white/[0.02] backdrop-blur-3xl border border-white/[0.05] rounded-[2.5rem] p-6 flex flex-col relative overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.5)]">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        {/* ========================================== */}
+        {/* RIGHT AREA: COURSE CURRICULUM SIDEBAR      */}
+        {/* ========================================== */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <motion.div
+              initial={{ x: "100%", opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: "100%", opacity: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
+              className="absolute top-0 right-0 h-full w-full sm:w-[350px] xl:w-[400px] bg-[#111111] border-l border-white/10 flex flex-col z-30 shadow-2xl"
+            >
+              <div className="p-5 border-b border-white/10 flex justify-between items-center bg-black/20">
+                <h3 className="font-black text-white text-sm tracking-widest uppercase">
+                  Course Folders
+                </h3>
+                <button
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="lg:hidden p-2 text-slate-400 hover:text-white"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div className="mb-6 z-10">
-              <h2 className="text-lg font-black text-white uppercase tracking-widest mb-1 flex items-center gap-2">
-                <Layers className="w-5 h-5 text-cyan-400" /> Neural Pathway
-              </h2>
-              <p className="text-xs text-slate-500 font-bold tracking-wide">
-                3 Phases • 6 Synapses
-              </p>
-            </div>
-
-            <div className="flex-1 overflow-y-auto hide-scrollbar z-10 pr-2">
-              <div className="relative border-l-2 border-white/10 ml-4 space-y-8 pb-10">
-                {curriculum.map((module) => (
-                  <div key={module.id} className="relative pl-6">
-                    <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-[#030712] border-2 border-slate-600 flex items-center justify-center">
-                      {module.locked ? (
-                        <Lock className="w-2 h-2 text-slate-500" />
-                      ) : (
-                        <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
-                      )}
-                    </div>
-
+              {/* Folders & Videos Accordion */}
+              <div className="flex-1 overflow-y-auto hide-scrollbar pb-20">
+                {courseData.curriculum.map((section) => (
+                  <div
+                    key={section.id}
+                    className="border-b border-white/5 last:border-0"
+                  >
+                    {/* Folder / Section Header */}
                     <button
-                      onClick={() => !module.locked && toggleModule(module.id)}
-                      className={`flex flex-col text-left w-full -mt-1.5 mb-4 group ${module.locked ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                      onClick={() =>
+                        setExpandedSection(
+                          expandedSection === section.id ? null : section.id,
+                        )
+                      }
+                      className={`w-full flex items-center justify-between p-5 transition-colors text-left ${expandedSection === section.id ? "bg-white/5" : "hover:bg-white/5"}`}
                     >
-                      <h3
-                        className={`text-sm font-black uppercase tracking-wider transition-colors ${expandedModules.includes(module.id) && !module.locked ? "text-white" : "text-slate-500 group-hover:text-slate-300"}`}
-                      >
-                        {module.title}
-                      </h3>
-                      <span className="text-xs text-slate-600 font-bold">
-                        {module.duration}
-                      </span>
+                      <div className="flex-1 pr-4">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <FolderOpen
+                            className={`w-4 h-4 ${expandedSection === section.id ? "text-blue-400" : "text-slate-500"}`}
+                          />
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                            {section.videos.length} Videos • {section.totalTime}
+                          </p>
+                        </div>
+                        <h4
+                          className={`text-sm font-bold leading-snug ${expandedSection === section.id ? "text-white" : "text-slate-300"}`}
+                        >
+                          {section.title}
+                        </h4>
+                      </div>
+                      <ChevronDown
+                        className={`w-4 h-4 text-slate-500 transition-transform duration-300 ${expandedSection === section.id ? "rotate-180 text-white" : ""}`}
+                      />
                     </button>
 
+                    {/* Videos inside the Folder */}
                     <AnimatePresence>
-                      {expandedModules.includes(module.id) &&
-                        !module.locked && (
-                          <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="space-y-2 overflow-hidden"
-                          >
-                            {module.lessons.map((lesson) => {
-                              const isPlaying = currentVideo.id === lesson.id;
-                              return (
-                                <button
-                                  key={lesson.id}
-                                  onClick={() => setCurrentVideo(lesson)}
-                                  className={`w-full p-3 rounded-2xl flex items-center gap-3 transition-all ${
-                                    isPlaying
-                                      ? "bg-cyan-500/10 border border-cyan-500/30 shadow-[inset_0_0_20px_rgba(6,182,212,0.1)]"
-                                      : "bg-white/[0.02] border border-white/5 hover:bg-white/[0.05]"
-                                  }`}
+                      {expandedSection === section.id && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="overflow-hidden bg-[#0A0A0A]"
+                        >
+                          {section.videos.map((video) => (
+                            <div
+                              key={video.id}
+                              onClick={() => setActiveVideo(video)}
+                              className={`flex gap-3 p-4 pl-6 border-b border-white/5 cursor-pointer transition-all ${activeVideo.id === video.id ? "bg-blue-900/20 border-l-2 border-l-blue-500" : "hover:bg-white/5 border-l-2 border-l-transparent"}`}
+                            >
+                              <div className="shrink-0 mt-0.5">
+                                {video.completed ? (
+                                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                                ) : (
+                                  <Circle className="w-4 h-4 text-slate-600" />
+                                )}
+                              </div>
+                              <div className="flex-1">
+                                <p
+                                  className={`text-sm font-bold leading-snug mb-1 ${activeVideo.id === video.id ? "text-blue-400" : "text-slate-300"}`}
                                 >
-                                  <div className="shrink-0">
-                                    {lesson.completed ? (
-                                      <CheckCircle className="w-5 h-5 text-emerald-400" />
-                                    ) : isPlaying ? (
-                                      <div className="w-5 h-5 bg-cyan-400 rounded-full flex items-center justify-center shadow-[0_0_10px_rgba(6,182,212,0.8)]">
-                                        <Play className="w-2.5 h-2.5 text-black fill-current ml-0.5" />
-                                      </div>
-                                    ) : (
-                                      <div className="w-5 h-5 rounded-full border-2 border-slate-600"></div>
-                                    )}
-                                  </div>
-                                  <div className="flex flex-col items-start min-w-0">
-                                    <p
-                                      className={`text-sm font-bold truncate w-full text-left ${isPlaying ? "text-cyan-400" : "text-slate-300"}`}
-                                    >
-                                      {lesson.title}
-                                    </p>
-                                    <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                                      {lesson.duration}
-                                    </span>
-                                  </div>
-
-                                  {/* Dynamic EQ Audio Bars for currently playing lesson */}
-                                  {isPlaying && (
-                                    <div className="ml-auto flex gap-0.5 h-3 items-end">
-                                      <motion.div
-                                        animate={{
-                                          height: ["40%", "100%", "40%"],
-                                        }}
-                                        transition={{
-                                          duration: 0.5,
-                                          repeat: Infinity,
-                                        }}
-                                        className="w-1 bg-cyan-400 rounded-full"
-                                      ></motion.div>
-                                      <motion.div
-                                        animate={{
-                                          height: ["80%", "30%", "80%"],
-                                        }}
-                                        transition={{
-                                          duration: 0.6,
-                                          repeat: Infinity,
-                                        }}
-                                        className="w-1 bg-cyan-400 rounded-full"
-                                      ></motion.div>
-                                      <motion.div
-                                        animate={{
-                                          height: ["50%", "100%", "50%"],
-                                        }}
-                                        transition={{
-                                          duration: 0.4,
-                                          repeat: Infinity,
-                                        }}
-                                        className="w-1 bg-cyan-400 rounded-full"
-                                      ></motion.div>
-                                    </div>
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </motion.div>
-                        )}
+                                  {video.title}
+                                </p>
+                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-widest">
+                                  <PlayCircle className="w-3.5 h-3.5" />{" "}
+                                  {video.duration}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
                     </AnimatePresence>
                   </div>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
