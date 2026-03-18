@@ -313,7 +313,9 @@ export default function Header() {
                         </div>
                         <div
                           onClick={() =>
-                            navigate(role === "tutor" ? "/admin" : "/dashboard")
+                            navigate(
+                              role === "tutor" ? "/dashboard" : "/dashboard",
+                            )
                           }
                           className="flex items-center gap-3 px-5 py-2.5 hover:bg-blue-50 cursor-pointer group"
                         >
