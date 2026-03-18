@@ -33,15 +33,15 @@ export default function Header() {
     window.addEventListener("scroll", handleScroll);
 
     // Fetch user and make sure it doesn't crash if data is weird
-    try {
-      const userStr = localStorage.getItem("vsintellecta_active_user");
-      if (userStr) {
-        const parsedUser = JSON.parse(userStr);
-        setActiveUser(parsedUser);
-      }
-    } catch (e) {
-      console.error("Failed to parse user from local storage");
-    }
+    // try {
+    //   const userStr = localStorage.getItem("vsintellecta_active_user");
+    //   if (userStr) {
+    //     const parsedUser = JSON.parse(userStr);
+    //     setActiveUser(parsedUser);
+    //   }
+    // } catch (e) {
+    //   console.error("Failed to parse user from local storage");
+    // }
 
     return () => window.removeEventListener("scroll", handleScroll);
   }, [location]);
