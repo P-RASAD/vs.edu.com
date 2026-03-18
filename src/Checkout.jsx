@@ -23,12 +23,12 @@ export default function Checkout() {
 
   // Fetch logged-in user's email
   useEffect(() => {
-    const activeUser = JSON.parse(
-      localStorage.getItem("vsintellecta_active_user"),
-    );
-    if (activeUser) {
-      setUserEmail(activeUser.email);
-    }
+    // const activeUser = JSON.parse(
+    //   localStorage.getItem("vsintellecta_active_user"),
+    // );
+    // if (activeUser) {
+    //   setUserEmail(activeUser.email);
+    // }
   }, []);
 
   const cartItems = [

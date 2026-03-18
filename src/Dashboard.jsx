@@ -45,7 +45,7 @@ import { useNavigate } from "react-router-dom";
 // ============================================================================
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [activeUser, setActiveUser] = useState(null);
+  // const [activeUser, setActiveUser] = useState(null);
   const [currentView, setCurrentView] = useState("dashboard");
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
 
@@ -58,18 +58,18 @@ export default function Dashboard() {
     },
   ]);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    const userStr = localStorage.getItem("vsintellecta_active_user");
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setActiveUser(user);
-      if (user.role === "superadmin" || user.role === "admin")
-        setCurrentView("admin-hub");
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
+  // useEffect(() => {
+    // window.scrollTo(0, 0);
+    // const userStr = localStorage.getItem("vsintellecta_active_user");
+    // if (userStr) {
+    //   const user = JSON.parse(userStr);
+    //   setActiveUser(user);
+    //   if (user.role === "superadmin" || user.role === "admin")
+    //     setCurrentView("admin-hub");
+    // } else {
+      // navigate("/login");
+    // }
+  // }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("vsintellecta_active_user");
@@ -112,12 +112,12 @@ export default function Dashboard() {
     setModules(newMods);
   };
 
-  const fName = activeUser?.firstName || activeUser?.first_name || "Avinash";
-  const role = activeUser?.role || "learner";
+  const fName = "Avinash";
+  const role = "learner";
   const isTutor = role === "tutor";
   const isAdminOrSuper = role === "admin" || role === "superadmin";
 
-  if (!activeUser) return <div className="min-h-screen bg-[#F4F7FE]"></div>;
+  // if (!activeUser) return <div className="min-h-screen bg-[#F4F7FE]"></div>;
 
   return (
     <div className="flex h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 font-sans text-slate-900 overflow-hidden selection:bg-blue-200 relative">
@@ -267,7 +267,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-4">
             {isTutor && (
               <button
-                onClick={() => setIsCourseModalOpen(true)}
+                // onClick={() => setIsCourseModalOpen(true)}
                 className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full text-sm font-black shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:shadow-[0_12px_25px_rgba(37,99,235,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-1"
               >
                 <UploadCloud className="w-5 h-5" /> Add Course
@@ -284,9 +284,9 @@ export default function Dashboard() {
             {currentView === "explore" && <ExploreView />}
             {currentView === "my-programs" && <MyProgramsView />}
             {currentView === "tutor-hub" && <TutorFinancialView />}
-            {currentView === "settings" && (
+            {/* {currentView === "settings" && (
               <AccountSettingsView user={activeUser} />
-            )}
+            )} */}
             {currentView === "admin-hub" && <AdminOverview />}
           </AnimatePresence>
         </div>
