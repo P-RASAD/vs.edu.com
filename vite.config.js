@@ -4,13 +4,6 @@ import react from "@vitejs/plugin-react-swc"
 export default defineConfig({
   plugins: [react()],
   build: {
-    rollupOptions: {
-      output: {
-        manualChunks: {
-          react: ["react", "react-dom"],
-          router: ["react-router-dom"],
-        },
-      },
-    },
+    chunkSizeWarningLimit: 1000, // optional: removes 500kb warning noise
   },
 })
