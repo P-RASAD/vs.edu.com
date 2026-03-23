@@ -1,18 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   LayoutDashboard,
   Compass,
   BookOpen,
-  Award,
   Settings,
   LogOut,
   Flame,
   Play,
-  ChevronRight,
-  Sparkles,
-  CheckCircle,
-  MonitorPlay,
-  BrainCircuit,
   UploadCloud,
   DollarSign,
   Star,
@@ -21,13 +15,11 @@ import {
   Plus,
   Folder,
   Video,
-  Activity,
   Search,
   SlidersHorizontal,
   BarChart3,
   Shield,
   GraduationCap,
-  Target,
   TrendingUp,
   Medal,
   PlusCircle,
@@ -35,21 +27,53 @@ import {
   Trash2,
   User,
   Phone,
-  Lock,
+  MonitorPlay,
+  CheckCircle,
+  Zap,
+  ChevronRight,
+  Sparkles,
+  Bell,
+  ArrowUpRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 
+// ─────────────────────────────────────────────
+// DESIGN TOKENS — VSintellecta Brand System
+// Primary:   #0057FF  (electric blue)
+// Secondary: #00C2FF  (sky cyan)
+// Accent:    #FF6B35  (warm coral — used sparingly)
+// Dark:      #050E2B  (deep navy)
+// Surface:   #F0F4FF  (blue-tinted white)
+// ─────────────────────────────────────────────
+
+const C = {
+  primary: "#0057FF",
+  secondary: "#00C2FF",
+  accent: "#FF6B35",
+  surface: "#F0F4FF",
+  dark: "#050E2B",
+};
+
+const spring = { type: "spring", stiffness: 420, damping: 32 };
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 22 },
+  visible: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.52, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] },
+  }),
+};
+
 // ============================================================================
-// 1. MASTER LAYOUT & CONTROLLER
+// MASTER LAYOUT
 // ============================================================================
 export default function Dashboard() {
   const navigate = useNavigate();
   const [activeUser, setActiveUser] = useState(null);
   const [currentView, setCurrentView] = useState("dashboard");
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
-
-  // Curriculum Builder State (For Modal)
   const [modules, setModules] = useState([
     {
       id: 1,
@@ -86,30 +110,26 @@ export default function Dashboard() {
         videos: [],
       },
     ]);
-  const addVideo = (modIndex) => {
-    const newMods = [...modules];
-    newMods[modIndex].videos.push("");
-    setModules(newMods);
+  const addVideo = (mi) => {
+    const m = [...modules];
+    m[mi].videos.push("");
+    setModules(m);
   };
-  const updateMod = (i, text) => {
-    const newMods = [...modules];
-    newMods[i].title = text;
-    setModules(newMods);
+  const updateMod = (i, t) => {
+    const m = [...modules];
+    m[i].title = t;
+    setModules(m);
   };
-  const updateVid = (mI, vI, text) => {
-    const newMods = [...modules];
-    newMods[mI].videos[vI] = text;
-    setModules(newMods);
+  const updateVid = (mi, vi, t) => {
+    const m = [...modules];
+    m[mi].videos[vi] = t;
+    setModules(m);
   };
-  const removeMod = (modIndex) => {
-    setModules(modules.filter((_, i) => i !== modIndex));
-  };
-  const removeVid = (modIndex, vidIndex) => {
-    const newMods = [...modules];
-    newMods[modIndex].videos = newMods[modIndex].videos.filter(
-      (_, i) => i !== vidIndex,
-    );
-    setModules(newMods);
+  const removeMod = (mi) => setModules(modules.filter((_, i) => i !== mi));
+  const removeVid = (mi, vi) => {
+    const m = [...modules];
+    m[mi].videos = m[mi].videos.filter((_, i) => i !== vi);
+    setModules(m);
   };
 
   const fName = activeUser?.firstName || activeUser?.first_name || "Avinash";
@@ -117,185 +137,87 @@ export default function Dashboard() {
   const isTutor = role === "tutor";
   const isAdminOrSuper = role === "admin" || role === "superadmin";
 
-  if (!activeUser) return <div className="min-h-screen bg-[#F4F7FE]"></div>;
+  if (!activeUser)
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: C.surface }}
+      >
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+          className="w-10 h-10 rounded-full border-[3px] border-transparent"
+          style={{ borderTopColor: C.primary, borderRightColor: C.secondary }}
+        />
+      </div>
+    );
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 font-sans text-slate-900 overflow-hidden selection:bg-blue-200 relative">
-      {/* Background ambient glow */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-blue-400/10 rounded-full blur-[100px] pointer-events-none"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-purple-400/10 rounded-full blur-[100px] pointer-events-none"></div>
-
-      {/* --- COLUMN 1: FLOATING CURVY SIDEBAR --- */}
-      <div className="p-4 z-20 h-full flex flex-col shrink-0 w-[280px]">
-        <aside className="w-full h-full rounded-[2.5rem] bg-white/70 backdrop-blur-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white flex flex-col overflow-hidden">
-          <div
-            className="h-24 flex items-center px-8 cursor-pointer"
-            onClick={() => navigate("/")}
-          >
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center mr-3 shadow-md">
-              <GraduationCap className="w-6 h-6 text-cyan-400" />
-            </div>
-            <h1 className="text-2xl font-black tracking-tight text-slate-900">
-              <span className="text-cyan-500">VS</span>intellecta
-            </h1>
-          </div>
-
-          <nav className="flex-1 overflow-y-auto px-6 py-4 space-y-2 hide-scrollbar">
-            <p className="px-2 text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
-              Main Menu
-            </p>
-            {!isAdminOrSuper && (
-              <>
-                <SidebarItem
-                  id="dashboard"
-                  icon={<LayoutDashboard />}
-                  label="Dashboard"
-                  currentView={currentView}
-                  setCurrentView={setCurrentView}
-                />
-                <SidebarItem
-                  id="explore"
-                  icon={<Compass />}
-                  label="All Courses"
-                  currentView={currentView}
-                  setCurrentView={setCurrentView}
-                />
-                <SidebarItem
-                  id="my-programs"
-                  icon={<BookOpen />}
-                  label="My Programs"
-                  currentView={currentView}
-                  setCurrentView={setCurrentView}
-                />
-              </>
-            )}
-            {isTutor && (
-              <>
-                <div className="my-6 border-t border-slate-200/50"></div>
-                <p className="px-2 text-xs font-black text-blue-500 uppercase tracking-widest mb-4">
-                  Teaching Hub
-                </p>
-                <SidebarItem
-                  id="tutor-hub"
-                  icon={<BarChart3 />}
-                  label="Instructor Analytics"
-                  currentView={currentView}
-                  setCurrentView={setCurrentView}
-                />
-              </>
-            )}
-            {isAdminOrSuper && (
-              <>
-                <SidebarItem
-                  id="admin-hub"
-                  icon={<Shield />}
-                  label="Platform Command"
-                  currentView={currentView}
-                  setCurrentView={setCurrentView}
-                />
-              </>
-            )}
-            <div className="my-6 border-t border-slate-200/50"></div>
-            <p className="px-2 text-xs font-black text-slate-400 uppercase tracking-widest mb-4">
-              Settings
-            </p>
-            <SidebarItem
-              id="settings"
-              icon={<Settings />}
-              label="Account Settings"
-              currentView={currentView}
-              setCurrentView={setCurrentView}
-            />
-          </nav>
-
-          <div className="p-5">
-            <div className="flex items-center justify-between p-3 rounded-[1.5rem] hover:bg-white/80 transition-all cursor-pointer group shadow-sm border border-slate-100 bg-white/50">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-black shadow-md border-2 border-white">
-                  {fName.charAt(0).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-slate-900 truncate w-24">
-                    {fName}
-                  </p>
-                  <p className="text-[10px] font-black text-blue-600 uppercase tracking-widest">
-                    {role}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="p-2 bg-white rounded-full text-slate-400 hover:text-rose-500 hover:shadow-md transition-all"
-              >
-                <LogOut className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </aside>
+    <div
+      className="flex h-screen overflow-hidden font-sans"
+      style={{
+        background:
+          "linear-gradient(145deg, #EEF3FF 0%, #F7F9FF 45%, #EAF6FF 100%)",
+      }}
+    >
+      {/* Ambient mesh */}
+      <div className="pointer-events-none fixed inset-0 overflow-hidden z-0">
+        <div
+          className="absolute -top-40 -left-40 w-[700px] h-[700px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(0,87,255,0.07) 0%, transparent 65%)",
+          }}
+        />
+        <div
+          className="absolute top-1/2 -right-64 w-[500px] h-[500px] rounded-full"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(0,194,255,0.06) 0%, transparent 65%)",
+          }}
+        />
       </div>
 
-      {/* --- COLUMN 2: MAIN CONTENT --- */}
+      <Sidebar
+        fName={fName}
+        role={role}
+        isTutor={isTutor}
+        isAdminOrSuper={isAdminOrSuper}
+        currentView={currentView}
+        setCurrentView={setCurrentView}
+        handleLogout={handleLogout}
+        navigate={navigate}
+      />
+
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
-        <header className="h-28 px-10 flex items-center justify-between shrink-0">
-          <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
-              {currentView === "dashboard"
-                ? `Good Morning, ${fName}`
-                : currentView === "explore"
-                  ? "All Courses Catalog"
-                  : currentView === "my-programs"
-                    ? "My Enrolled Programs"
-                    : currentView === "tutor-hub"
-                      ? "Instructor Financials"
-                      : "Account Details"}
-              {isTutor && currentView === "dashboard" && (
-                <Medal className="w-8 h-8 text-amber-400 fill-amber-400 drop-shadow-md" />
-              )}
-            </h2>
-            {isTutor && currentView === "dashboard" ? (
-              <p className="text-sm font-bold text-emerald-600 mt-2 flex items-center gap-1.5 bg-emerald-50 w-max px-3 py-1 rounded-full border border-emerald-100 shadow-sm">
-                <TrendingUp className="w-4 h-4" /> Profit increased by 18.5%
-                from last month
-              </p>
-            ) : (
-              <p className="text-sm font-medium text-slate-500 mt-1">
-                Ready to enhance your skills today?
-              </p>
-            )}
-          </div>
-
-          <div className="flex items-center gap-4">
-            {isTutor && (
-              <button
-                onClick={() => setIsCourseModalOpen(true)}
-                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full text-sm font-black shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:shadow-[0_12px_25px_rgba(37,99,235,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-1"
-              >
-                <UploadCloud className="w-5 h-5" /> Add Course
-              </button>
-            )}
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-y-auto px-10 pb-24 hide-scrollbar relative">
+        <TopBar
+          fName={fName}
+          isTutor={isTutor}
+          currentView={currentView}
+          onAddCourse={() => setIsCourseModalOpen(true)}
+        />
+        <div className="flex-1 overflow-y-auto px-8 pb-20 pt-6 hide-scrollbar">
           <AnimatePresence mode="wait">
             {currentView === "dashboard" && (
-              <UserHomeView setCurrentView={setCurrentView} />
+              <UserHomeView
+                key="home"
+                setCurrentView={setCurrentView}
+                isTutor={isTutor}
+              />
             )}
-            {currentView === "explore" && <ExploreView />}
-            {currentView === "my-programs" && <MyProgramsView />}
-            {currentView === "tutor-hub" && <TutorFinancialView />}
+            {currentView === "explore" && <ExploreView key="explore" />}
+            {currentView === "my-programs" && <MyProgramsView key="programs" />}
+            {currentView === "tutor-hub" && <TutorFinancialView key="tutor" />}
             {currentView === "settings" && (
-              <AccountSettingsView user={activeUser} />
+              <AccountSettingsView key="settings" user={activeUser} />
             )}
-            {currentView === "admin-hub" && <AdminOverview />}
+            {currentView === "admin-hub" && <AdminOverview key="admin" />}
           </AnimatePresence>
         </div>
       </main>
 
-      {/* --- COLUMN 3: RIGHT SIDEBAR --- */}
       {!isAdminOrSuper && currentView === "dashboard" && <RightSidebar />}
 
-      {/* --- EDITABLE CREATE COURSE MODAL --- */}
       <CreateCourseModal
         isOpen={isCourseModalOpen}
         onClose={() => setIsCourseModalOpen(false)}
@@ -311,36 +233,327 @@ export default function Dashboard() {
   );
 }
 
-const SidebarItem = ({ id, icon, label, currentView, setCurrentView }) => {
+// ============================================================================
+// SIDEBAR
+// ============================================================================
+function Sidebar({
+  fName,
+  role,
+  isTutor,
+  isAdminOrSuper,
+  currentView,
+  setCurrentView,
+  handleLogout,
+  navigate,
+}) {
+  const mainNav = !isAdminOrSuper
+    ? [
+        { id: "dashboard", icon: LayoutDashboard, label: "Dashboard" },
+        { id: "explore", icon: Compass, label: "All Courses" },
+        { id: "my-programs", icon: BookOpen, label: "My Programs" },
+      ]
+    : [];
+  const tutorNav = isTutor
+    ? [{ id: "tutor-hub", icon: BarChart3, label: "Instructor Analytics" }]
+    : [];
+  const adminNav = isAdminOrSuper
+    ? [{ id: "admin-hub", icon: Shield, label: "Platform Command" }]
+    : [];
+  const settingsNav = [
+    { id: "settings", icon: Settings, label: "Account Settings" },
+  ];
+
+  return (
+    <motion.div
+      initial={{ x: -24, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="w-[258px] h-full p-3 shrink-0 z-20 flex flex-col"
+    >
+      <div
+        className="flex-1 rounded-[28px] flex flex-col overflow-hidden"
+        style={{
+          background: "rgba(255,255,255,0.88)",
+          backdropFilter: "blur(40px)",
+          border: "1px solid rgba(0,87,255,0.09)",
+          boxShadow:
+            "0 8px 40px rgba(0,87,255,0.07), inset 0 1px 0 rgba(255,255,255,0.9)",
+        }}
+      >
+        {/* Logo */}
+        <div
+          className="px-6 pt-6 pb-5 cursor-pointer"
+          onClick={() => navigate("/")}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className="w-11 h-11 rounded-2xl flex items-center justify-center relative overflow-hidden"
+              style={{
+                background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+              }}
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    "radial-gradient(circle at 30% 25%, rgba(255,255,255,0.35), transparent 60%)",
+                }}
+              />
+              <GraduationCap className="w-5 h-5 text-white relative z-10" />
+            </div>
+            <div>
+              <h1
+                className="text-[17px] font-black tracking-tight leading-none"
+                style={{ color: C.dark }}
+              >
+                <span style={{ color: C.primary }}>VS</span>intellecta
+              </h1>
+              <p
+                className="text-[9px] font-extrabold tracking-[0.18em] uppercase mt-0.5"
+                style={{ color: C.secondary }}
+              >
+                Learning Platform
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div
+          className="mx-5 h-px"
+          style={{
+            background: `linear-gradient(90deg, transparent, rgba(0,87,255,0.1), transparent)`,
+          }}
+        />
+
+        <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-0.5 hide-scrollbar">
+          <NavGroup
+            label="Navigation"
+            items={mainNav}
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+          />
+          {isTutor && (
+            <NavGroup
+              label="Teaching"
+              items={tutorNav}
+              currentView={currentView}
+              setCurrentView={setCurrentView}
+              accent
+            />
+          )}
+          {isAdminOrSuper && (
+            <NavGroup
+              label="Admin"
+              items={adminNav}
+              currentView={currentView}
+              setCurrentView={setCurrentView}
+            />
+          )}
+          <NavGroup
+            label="Account"
+            items={settingsNav}
+            currentView={currentView}
+            setCurrentView={setCurrentView}
+          />
+        </nav>
+
+        {/* User pill */}
+        <div className="p-3">
+          <motion.div
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="flex items-center gap-3 p-3 rounded-2xl cursor-pointer"
+            style={{
+              background: "rgba(0,87,255,0.04)",
+              border: "1px solid rgba(0,87,255,0.08)",
+            }}
+          >
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm shrink-0"
+              style={{
+                background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+              }}
+            >
+              {fName.charAt(0).toUpperCase()}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p
+                className="text-sm font-bold truncate"
+                style={{ color: C.dark }}
+              >
+                {fName}
+              </p>
+              <p
+                className="text-[10px] font-black uppercase tracking-wider"
+                style={{ color: C.primary }}
+              >
+                {role}
+              </p>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="p-1.5 rounded-lg transition-all hover:bg-red-50 group"
+            >
+              <LogOut className="w-3.5 h-3.5 text-slate-400 group-hover:text-red-500 transition-colors" />
+            </button>
+          </motion.div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function NavGroup({ label, items, currentView, setCurrentView, accent }) {
+  if (!items.length) return null;
+  return (
+    <div className="mb-3">
+      <p
+        className="px-3 text-[9px] font-black tracking-[0.2em] uppercase mb-2 mt-3"
+        style={{ color: accent ? C.primary : "#94A3B8" }}
+      >
+        {label}
+      </p>
+      {items.map((item) => (
+        <SidebarItem
+          key={item.id}
+          {...item}
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+        />
+      ))}
+    </div>
+  );
+}
+
+function SidebarItem({ id, icon: Icon, label, currentView, setCurrentView }) {
   const isActive = currentView === id;
   return (
-    <button
+    <motion.button
       onClick={() => setCurrentView(id)}
-      className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-[1.2rem] font-bold text-sm transition-all duration-300 ${isActive ? "bg-blue-600 text-white shadow-[0_8px_20px_rgba(37,99,235,0.3)] scale-[1.02]" : "text-slate-500 hover:bg-white hover:shadow-sm hover:text-slate-900"}`}
+      whileTap={{ scale: 0.98 }}
+      className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors relative"
+      style={{ color: isActive ? "white" : "#64748B" }}
     >
-      <span className={`${isActive ? "text-white" : "text-slate-400"}`}>
-        {React.cloneElement(icon, { className: "w-5 h-5" })}
+      {isActive && (
+        <motion.div
+          layoutId="navActive"
+          className="absolute inset-0 rounded-xl"
+          style={{
+            background: `linear-gradient(135deg, ${C.primary}, #0080FF)`,
+            boxShadow: `0 4px 14px rgba(0,87,255,0.32)`,
+          }}
+          transition={spring}
+        />
+      )}
+      <span
+        className="relative z-10"
+        style={{ color: isActive ? "white" : "#94A3B8" }}
+      >
+        <Icon className="w-4 h-4" />
       </span>
-      {label}
-    </button>
+      <span className="relative z-10 font-semibold">{label}</span>
+      {isActive && (
+        <ChevronRight className="w-3 h-3 ml-auto relative z-10 opacity-50" />
+      )}
+      {!isActive && (
+        <motion.div
+          className="absolute inset-0 rounded-xl opacity-0 hover:opacity-100 transition-opacity"
+          style={{ background: "rgba(0,87,255,0.04)" }}
+        />
+      )}
+    </motion.button>
   );
-};
+}
 
 // ============================================================================
-// COMPONENT: USER DASHBOARD HOME
+// TOP BAR
 // ============================================================================
-const UserHomeView = ({ setCurrentView }) => {
-  const navigate = useNavigate();
-  const fadeUp = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.5 } },
+function TopBar({ fName, isTutor, currentView, onAddCourse }) {
+  const titles = {
+    dashboard: `Good Morning, ${fName} ✦`,
+    explore: "Course Catalog",
+    "my-programs": "My Programs",
+    "tutor-hub": "Instructor Financials",
+    settings: "Account Settings",
+    "admin-hub": "Platform Command",
   };
+  return (
+    <motion.header
+      initial={{ y: -12, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      className="h-20 px-8 flex items-center justify-between shrink-0"
+      style={{
+        borderBottom: "1px solid rgba(0,87,255,0.06)",
+        background: "rgba(255,255,255,0.6)",
+        backdropFilter: "blur(20px)",
+      }}
+    >
+      <div>
+        <h2
+          className="text-2xl font-black tracking-tight"
+          style={{ color: C.dark }}
+        >
+          {titles[currentView]}
+        </h2>
+        {isTutor && currentView === "dashboard" ? (
+          <p
+            className="text-xs font-bold mt-1 flex items-center gap-1.5"
+            style={{ color: "#10B981" }}
+          >
+            <TrendingUp className="w-3.5 h-3.5" /> Revenue up 18.5% this month
+          </p>
+        ) : (
+          <p className="text-xs font-medium mt-1" style={{ color: "#94A3B8" }}>
+            Ready to enhance your skills today?
+          </p>
+        )}
+      </div>
+      <div className="flex items-center gap-3">
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          className="relative w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,87,255,0.1)",
+            boxShadow: "0 2px 10px rgba(0,87,255,0.06)",
+          }}
+        >
+          <Bell className="w-4 h-4 text-slate-500" />
+          <span
+            className="absolute top-2 right-2 w-2 h-2 rounded-full"
+            style={{ background: C.accent }}
+          />
+        </motion.button>
+        {isTutor && (
+          <motion.button
+            onClick={onAddCourse}
+            whileHover={{ scale: 1.02, y: -1 }}
+            whileTap={{ scale: 0.97 }}
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white"
+            style={{
+              background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+              boxShadow: "0 4px 20px rgba(0,87,255,0.32)",
+            }}
+          >
+            <UploadCloud className="w-4 h-4" /> Add Course
+          </motion.button>
+        )}
+      </div>
+    </motion.header>
+  );
+}
 
-  // Apple-style Accordion State with Hover-Pause
+// ============================================================================
+// USER HOME VIEW
+// ============================================================================
+const UserHomeView = ({ setCurrentView, isTutor }) => {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(0);
-  const [isHovered, setIsHovered] = useState(false); // To pause auto-carousel on interaction
+  const [hovered, setHovered] = useState(false);
 
-  const appleFeatures = [
+  const features = [
     {
       title: "Psychometric Testing",
       desc: "Discover your true potential. Our advanced testing framework keeps you aligned as you move through your career.",
@@ -363,14 +576,81 @@ const UserHomeView = ({ setCurrentView }) => {
     },
   ];
 
-  // Auto-scroll the Take a Closer Look section every 5 seconds, PAUSED if user hovers
   useEffect(() => {
-    if (isHovered) return; // Pause carousel if hovered
-    const interval = setInterval(() => {
-      setActiveTab((prev) => (prev + 1) % appleFeatures.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [appleFeatures.length, isHovered]);
+    if (hovered) return;
+    const t = setInterval(
+      () => setActiveTab((p) => (p + 1) % features.length),
+      5000,
+    );
+    return () => clearInterval(t);
+  }, [hovered, features.length]);
+
+  const courses = [
+    {
+      title: "Career Options Post 12th",
+      next: "Engineering Pathways",
+      perc: 65,
+      videoId: "Pow-yUGYbVs",
+      color: C.primary,
+    },
+    {
+      title: "Resume Building Masterclass",
+      next: "Formatting Secrets",
+      perc: 33,
+      videoId: "O12p01-ITCY",
+      color: C.secondary,
+    },
+    {
+      title: "Psychometric Evaluation",
+      next: "Test Preparation",
+      perc: 12,
+      videoId: "p1Zle7wRG7E",
+      color: C.accent,
+    },
+  ];
+
+  const marqueeItems = [
+    {
+      title: "Top 5 Career Options",
+      author: "Surabhi Dewra",
+      rating: 4.8,
+      oldPrice: "₹2,999",
+      price: "₹999",
+      vid: "Pow-yUGYbVs",
+    },
+    {
+      title: "Psychometric Testing",
+      author: "Surabhi Dewra",
+      rating: 4.9,
+      oldPrice: "₹4,999",
+      price: "₹1,499",
+      vid: "O12p01-ITCY",
+    },
+    {
+      title: "After 12th Guidance",
+      author: "Surabhi Dewra",
+      rating: 4.7,
+      oldPrice: "₹1,999",
+      price: "₹499",
+      vid: "p1Zle7wRG7E",
+    },
+    {
+      title: "Engineering Careers",
+      author: "Surabhi Dewra",
+      rating: 4.6,
+      oldPrice: "₹3,499",
+      price: "₹1,299",
+      vid: "5KgSWcPFXks",
+    },
+    {
+      title: "Commerce Pathways",
+      author: "Surabhi Dewra",
+      rating: 4.8,
+      oldPrice: "₹2,499",
+      price: "₹799",
+      vid: "Pow-yUGYbVs",
+    },
+  ];
 
   return (
     <motion.div
@@ -379,253 +659,455 @@ const UserHomeView = ({ setCurrentView }) => {
       variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
       className="space-y-10 max-w-6xl mx-auto"
     >
-      {/* IN PROGRESS */}
-      <motion.section variants={fadeUp}>
-        <h3 className="text-xl font-black text-slate-900 mb-6">In Progress</h3>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* ── Tutor stat row ── */}
+      {isTutor && (
+        <motion.div variants={fadeUp} className="grid grid-cols-3 gap-4">
           {[
             {
-              title: "Career Options Post 12th",
-              next: "Engineering Pathways",
-              perc: 65,
-              grad: "from-[#e0e7ff] via-[#f3e8ff] to-[#fae8ff]",
-              videoId: "Pow-yUGYbVs",
+              label: "Gross Revenue",
+              val: "₹2,45,000",
+              icon: DollarSign,
+              color: "#10B981",
+              bg: "#ECFDF5",
+              border: "#D1FAE5",
             },
             {
-              title: "Resume Building Masterclass",
-              next: "Formatting Secrets",
-              perc: 33,
-              grad: "from-[#dcfce7] via-[#ccfbf1] to-[#cffafe]",
-              videoId: "O12p01-ITCY",
+              label: "Active Scholars",
+              val: "1,204",
+              icon: Users,
+              color: C.primary,
+              bg: "#EEF3FF",
+              border: "#DBEAFE",
             },
             {
-              title: "Psychometric Evaluation",
-              next: "Test Preparation",
-              perc: 12,
-              grad: "from-[#ffedd5] via-[#ffedd5] to-[#fef3c7]",
-              videoId: "p1Zle7wRG7E",
+              label: "Live Programs",
+              val: "4",
+              icon: MonitorPlay,
+              color: C.secondary,
+              bg: "#EAF6FF",
+              border: "#BAE6FD",
             },
-          ].map((course, i) => (
-            <div
+          ].map((s, i) => (
+            <motion.div
               key={i}
-              onClick={() => navigate("/course")}
-              className={`bg-gradient-to-br ${course.grad} rounded-[2rem] p-5 shadow-sm border border-white cursor-pointer hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group`}
+              custom={i}
+              variants={fadeUp}
+              whileHover={{ y: -3 }}
+              className="rounded-2xl p-5 flex items-center gap-4"
+              style={{
+                background: "white",
+                border: `1px solid ${s.border}`,
+                boxShadow: `0 4px 20px ${s.color}0F`,
+              }}
             >
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/50 blur-3xl rounded-full"></div>
+              <div
+                className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+                style={{ background: s.bg }}
+              >
+                <s.icon className="w-5 h-5" style={{ color: s.color }} />
+              </div>
+              <div>
+                <p
+                  className="text-[10px] font-black uppercase tracking-wider mb-0.5"
+                  style={{ color: "#94A3B8" }}
+                >
+                  {s.label}
+                </p>
+                <p className="text-2xl font-black" style={{ color: C.dark }}>
+                  {s.val}
+                </p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+      )}
 
-              <div className="w-full h-44 rounded-[1.5rem] overflow-hidden mb-5 relative shadow-md border-2 border-white">
-                <img
-                  src={`https://img.youtube.com/vi/${course.videoId}/maxresdefault.jpg`}
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  alt="youtube"
-                />
-                <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <div className="w-14 h-14 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center shadow-lg border border-white/50 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <Play className="w-6 h-6 text-white ml-1 fill-white" />
+      {/* ── Continue Learning ── */}
+      <motion.section variants={fadeUp}>
+        <div className="flex items-center justify-between mb-5">
+          <p
+            className="text-[10px] font-black uppercase tracking-[0.2em]"
+            style={{ color: "#94A3B8" }}
+          >
+            Continue Learning
+          </p>
+          <motion.button
+            whileHover={{ x: 2 }}
+            onClick={() => setCurrentView("my-programs")}
+            className="text-xs font-bold flex items-center gap-1"
+            style={{ color: C.primary }}
+          >
+            View all <ArrowRight className="w-3 h-3" />
+          </motion.button>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          {courses.map((c, i) => (
+            <motion.div
+              key={i}
+              custom={i}
+              variants={fadeUp}
+              whileHover={{ y: -5 }}
+              whileTap={{ scale: 0.99 }}
+              onClick={() => navigate("/course")}
+              className="rounded-[22px] overflow-hidden cursor-pointer group relative"
+              style={{
+                background: "white",
+                border: "1px solid rgba(0,87,255,0.08)",
+                boxShadow: `0 4px 24px rgba(0,87,255,0.07)`,
+              }}
+            >
+              <div
+                className="h-1 w-full"
+                style={{
+                  background: `linear-gradient(90deg, ${c.color}, ${c.color}88)`,
+                }}
+              />
+              <div className="p-4">
+                <div className="relative h-36 rounded-2xl overflow-hidden mb-4 bg-slate-100">
+                  <img
+                    src={`https://img.youtube.com/vi/${c.videoId}/maxresdefault.jpg`}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                    alt="course"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    <div
+                      className="w-12 h-12 rounded-full flex items-center justify-center"
+                      style={{
+                        background: "rgba(255,255,255,0.92)",
+                        backdropFilter: "blur(6px)",
+                      }}
+                    >
+                      <Play
+                        className="w-5 h-5 ml-0.5"
+                        style={{ color: c.color, fill: c.color }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <h4 className="font-black text-slate-900 text-lg leading-snug line-clamp-2 mb-2">
-                {course.title}
-              </h4>
-              <p className="text-sm font-bold text-slate-600 mb-5 flex items-center gap-2">
-                <Play className="w-4 h-4" /> Next: {course.next}
-              </p>
-
-              <div className="flex items-center gap-4 relative z-10">
-                <div className="flex-1 h-2.5 bg-white/60 rounded-full overflow-hidden">
+                <h4
+                  className="font-bold text-sm leading-snug mb-1"
+                  style={{ color: C.dark }}
+                >
+                  {c.title}
+                </h4>
+                <p
+                  className="text-xs mb-4 flex items-center gap-1.5"
+                  style={{ color: "#94A3B8" }}
+                >
+                  <Play className="w-3 h-3" /> Next: {c.next}
+                </p>
+                <div className="flex items-center gap-3">
                   <div
-                    className="h-full bg-blue-600 rounded-full"
-                    style={{ width: `${course.perc}%` }}
-                  ></div>
+                    className="flex-1 h-1.5 rounded-full overflow-hidden"
+                    style={{ background: "#F1F5F9" }}
+                  >
+                    <motion.div
+                      className="h-full rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: `${c.perc}%` }}
+                      transition={{
+                        duration: 1.2,
+                        delay: 0.6 + i * 0.12,
+                        ease: "easeOut",
+                      }}
+                      style={{
+                        background: `linear-gradient(90deg, ${c.color}, ${c.color}BB)`,
+                      }}
+                    />
+                  </div>
+                  <span
+                    className="text-xs font-black"
+                    style={{ color: c.color }}
+                  >
+                    {c.perc}%
+                  </span>
                 </div>
-                <span className="text-sm font-black text-slate-900">
-                  {course.perc}%
-                </span>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </motion.section>
 
-      {/* APPLE-STYLE "TAKE A CLOSER LOOK" SECTION WITH PLAYABLE IFRAMES */}
+      {/* ── Take a Closer Look ── */}
       <motion.section
         variants={fadeUp}
-        className="bg-[#0f172a] rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden shadow-2xl border border-slate-800"
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
+        className="rounded-[28px] overflow-hidden relative"
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{
+          background: `linear-gradient(145deg, ${C.dark} 0%, #0D1A3E 60%, #071428 100%)`,
+          border: "1px solid rgba(0,194,255,0.14)",
+          boxShadow: "0 24px 64px rgba(0,87,255,0.18)",
+        }}
       >
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-blue-500/20 rounded-full blur-[100px] pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-[300px] h-[300px] bg-cyan-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+        <div
+          className="absolute top-0 right-0 w-[420px] h-[420px] rounded-full pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(0,87,255,0.12) 0%, transparent 65%)",
+            transform: "translate(30%, -30%)",
+          }}
+        />
+        <div
+          className="absolute bottom-0 left-1/4 w-64 h-64 rounded-full pointer-events-none"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(0,194,255,0.07) 0%, transparent 65%)",
+          }}
+        />
+        {/* Grid lines */}
+        <div
+          className="absolute inset-0 opacity-[0.025] pointer-events-none"
+          style={{
+            backgroundImage:
+              "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
+            backgroundSize: "44px 44px",
+          }}
+        />
 
-        <h2 className="text-4xl font-black text-white mb-8 tracking-tight">
-          Take a closer look at your path.
-        </h2>
-
-        <div className="flex flex-col md:flex-row gap-10 relative z-10">
-          {/* Left Vertical Accordion */}
-          <div className="w-full md:w-[35%] flex flex-col gap-3">
-            {appleFeatures.map((feat, i) => {
-              const isActive = activeTab === i;
-              return (
-                <div key={i} className="flex flex-col">
-                  <button
-                    onClick={() => setActiveTab(i)}
-                    className={`flex items-center justify-between px-6 py-4 rounded-[2rem] text-sm font-black transition-all ${isActive ? "bg-white/10 text-white shadow-lg border border-white/20" : "bg-transparent text-slate-400 hover:text-white hover:bg-white/5"}`}
-                  >
-                    <span className="flex items-center gap-3">
-                      <PlusCircle
-                        className={`w-5 h-5 transition-transform duration-300 ${isActive ? "rotate-45 text-white" : "text-slate-500"}`}
-                      />
-                      {feat.title}
-                    </span>
-                    {isActive && (
-                      <ArrowRight className="w-4 h-4 text-cyan-400" />
-                    )}
-                  </button>
-                  <AnimatePresence>
-                    {isActive && (
-                      <motion.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: "auto", opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-5 mx-2 mt-2 bg-white/5 backdrop-blur-md rounded-[1.5rem] border border-white/10 text-sm font-medium text-slate-300 leading-relaxed">
-                          {feat.desc}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })}
+        <div className="relative z-10 p-8 md:p-12">
+          <div className="flex items-center gap-2.5 mb-2">
+            <div
+              className="w-6 h-6 rounded-lg flex items-center justify-center"
+              style={{
+                background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+              }}
+            >
+              <Sparkles className="w-3.5 h-3.5 text-white" />
+            </div>
+            <p
+              className="text-[10px] font-black uppercase tracking-[0.2em]"
+              style={{ color: C.secondary }}
+            >
+              Featured Content
+            </p>
           </div>
+          <h2 className="text-[28px] font-black text-white mb-8 leading-tight">
+            Take a closer look
+            <br />
+            at your path.
+          </h2>
 
-          {/* Right Display Area (Playable YouTube iFrame) */}
-          <div className="w-full md:w-[65%] h-[350px] md:h-[450px] rounded-[2.5rem] overflow-hidden border border-white/10 shadow-2xl relative z-10 bg-black">
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, scale: 0.98 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.98 }}
-                transition={{ duration: 0.4 }}
-                className="w-full h-full relative"
+          <div className="flex flex-col md:flex-row gap-8">
+            <div className="w-full md:w-[36%] flex flex-col gap-1.5">
+              {features.map((f, i) => {
+                const isAct = activeTab === i;
+                return (
+                  <div key={i}>
+                    <motion.button
+                      onClick={() => setActiveTab(i)}
+                      whileHover={{ x: 3 }}
+                      className="w-full flex items-center justify-between px-5 py-3.5 rounded-2xl text-sm font-semibold transition-all"
+                      style={{
+                        background: isAct
+                          ? "rgba(0,87,255,0.22)"
+                          : "transparent",
+                        border: isAct
+                          ? "1px solid rgba(0,87,255,0.28)"
+                          : "1px solid transparent",
+                        color: isAct ? "white" : "rgba(255,255,255,0.4)",
+                      }}
+                    >
+                      <span className="flex items-center gap-3">
+                        <motion.span
+                          animate={{ rotate: isAct ? 45 : 0 }}
+                          transition={spring}
+                        >
+                          <PlusCircle
+                            className="w-4 h-4"
+                            style={{
+                              color: isAct
+                                ? C.secondary
+                                : "rgba(255,255,255,0.25)",
+                            }}
+                          />
+                        </motion.span>
+                        {f.title}
+                      </span>
+                      {isAct && (
+                        <ArrowRight
+                          className="w-3.5 h-3.5"
+                          style={{ color: C.secondary }}
+                        />
+                      )}
+                    </motion.button>
+                    <AnimatePresence>
+                      {isAct && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3 }}
+                          className="overflow-hidden"
+                        >
+                          <div
+                            className="mx-2 mt-1 mb-1 p-4 rounded-xl text-xs leading-relaxed"
+                            style={{
+                              background: "rgba(255,255,255,0.05)",
+                              border: "1px solid rgba(255,255,255,0.07)",
+                              color: "rgba(255,255,255,0.55)",
+                            }}
+                          >
+                            {f.desc}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                );
+              })}
+              <div className="flex gap-1.5 px-5 mt-3">
+                {features.map((_, i) => (
+                  <motion.button
+                    key={i}
+                    onClick={() => setActiveTab(i)}
+                    animate={{
+                      width: activeTab === i ? 22 : 5,
+                      opacity: activeTab === i ? 1 : 0.3,
+                    }}
+                    transition={spring}
+                    className="h-1 rounded-full"
+                    style={{
+                      background:
+                        activeTab === i ? C.secondary : "rgba(255,255,255,0.4)",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="relative w-full md:w-[64%]">
+              <div
+                className="absolute -inset-[3px] rounded-[22px] blur-sm opacity-50"
+                style={{
+                  background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+                }}
+              />
+              <div
+                className="relative h-[290px] md:h-[370px] rounded-[18px] overflow-hidden"
+                style={{ border: "1px solid rgba(0,194,255,0.18)" }}
               >
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://www.youtube.com/embed/${appleFeatures[activeTab].videoId}?rel=0`}
-                  title={appleFeatures[activeTab].title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
-                  className="w-full h-full rounded-[2.5rem]"
-                ></iframe>
-              </motion.div>
-            </AnimatePresence>
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeTab}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="w-full h-full"
+                  >
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      src={`https://www.youtube.com/embed/${features[activeTab].videoId}?rel=0`}
+                      title={features[activeTab].title}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      className="w-full h-full"
+                    />
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
         </div>
       </motion.section>
 
-      {/* RELATED PROGRAMS (Curvy Marquee with Actual vs Offer Pricing) */}
-      <motion.section variants={fadeUp} className="py-4 overflow-hidden">
-        <div className="flex justify-between items-end mb-8">
-          <h3 className="text-2xl font-black text-slate-900">
-            Related Programs
-          </h3>
-          <button
-            onClick={() => setCurrentView("explore")}
-            className="text-sm font-black text-blue-600 hover:bg-blue-100 uppercase tracking-widest bg-blue-50 px-5 py-2.5 rounded-full transition-colors"
+      {/* ── Related Programs ── */}
+      <motion.section variants={fadeUp} className="overflow-hidden">
+        <div className="flex justify-between items-center mb-5">
+          <p
+            className="text-[10px] font-black uppercase tracking-[0.2em]"
+            style={{ color: "#94A3B8" }}
           >
-            View More
-          </button>
+            Related Programs
+          </p>
+          <motion.button
+            whileHover={{ x: 2 }}
+            onClick={() => setCurrentView("explore")}
+            className="text-xs font-bold flex items-center gap-1"
+            style={{ color: C.primary }}
+          >
+            View More <ArrowRight className="w-3 h-3" />
+          </motion.button>
         </div>
-
-        <div className="relative w-full flex overflow-x-hidden pb-6">
-          <div className="animate-marquee flex gap-8 whitespace-nowrap">
-            {[
-              {
-                title: "Top 5 Career Options",
-                author: "Surabhi Dewra",
-                rating: 4.8,
-                oldPrice: "₹2,999",
-                price: "₹999",
-                vid: "Pow-yUGYbVs",
-              },
-              {
-                title: "Psychometric Testing",
-                author: "Surabhi Dewra",
-                rating: 4.9,
-                oldPrice: "₹4,999",
-                price: "₹1,499",
-                vid: "O12p01-ITCY",
-              },
-              {
-                title: "After 12th Guidance",
-                author: "Surabhi Dewra",
-                rating: 4.7,
-                oldPrice: "₹1,999",
-                price: "₹499",
-                vid: "p1Zle7wRG7E",
-              },
-              {
-                title: "Engineering Careers",
-                author: "Surabhi Dewra",
-                rating: 4.6,
-                oldPrice: "₹3,499",
-                price: "₹1,299",
-                vid: "5KgSWcPFXks",
-              },
-              {
-                title: "Commerce Pathways",
-                author: "Surabhi Dewra",
-                rating: 4.8,
-                oldPrice: "₹2,499",
-                price: "₹799",
-                vid: "Pow-yUGYbVs",
-              },
-            ].map((course, i) => (
-              <div
+        <div className="flex overflow-x-hidden pb-2">
+          <div className="animate-marquee flex gap-5">
+            {[...marqueeItems, ...marqueeItems].map((c, i) => (
+              <motion.div
                 key={i}
+                whileHover={{ y: -4 }}
                 onClick={() => navigate("/course")}
-                className="w-[340px] bg-white border border-slate-100 rounded-[2.5rem] p-5 shadow-sm hover:shadow-[0_15px_40px_rgba(0,0,0,0.08)] transition-all inline-block cursor-pointer group"
+                className="w-[255px] rounded-2xl p-4 shrink-0 cursor-pointer group"
+                style={{
+                  background: "white",
+                  border: "1px solid rgba(0,87,255,0.08)",
+                  boxShadow: "0 2px 16px rgba(0,87,255,0.05)",
+                }}
               >
-                <div className="w-full h-44 rounded-[1.5rem] mb-5 overflow-hidden shadow-inner relative border border-slate-100">
+                <div
+                  className="relative h-34 rounded-xl overflow-hidden mb-3 bg-slate-100"
+                  style={{ height: "136px" }}
+                >
                   <img
-                    src={`https://img.youtube.com/vi/${course.vid}/maxresdefault.jpg`}
+                    src={`https://img.youtube.com/vi/${c.vid}/maxresdefault.jpg`}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     alt="course"
                   />
-                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                    <div className="w-12 h-12 bg-white/30 backdrop-blur-md rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg">
-                      <Play className="w-5 h-5 text-white ml-1 fill-white" />
+                  <div
+                    className="absolute inset-0 flex items-end justify-center pb-3 opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{
+                      background:
+                        "linear-gradient(to top, rgba(0,0,0,0.4), transparent)",
+                    }}
+                  >
+                    <div
+                      className="w-9 h-9 rounded-full flex items-center justify-center"
+                      style={{ background: "rgba(255,255,255,0.92)" }}
+                    >
+                      <Play
+                        className="w-3.5 h-3.5 ml-0.5"
+                        style={{ color: C.primary, fill: C.primary }}
+                      />
                     </div>
                   </div>
                 </div>
-                <h4 className="font-black text-slate-900 text-lg truncate mb-1">
-                  {course.title}
+                <h4
+                  className="font-bold text-sm truncate mb-0.5"
+                  style={{ color: C.dark }}
+                >
+                  {c.title}
                 </h4>
-                <p className="text-sm font-bold text-slate-500 mb-4">
-                  {course.author}
+                <p className="text-xs mb-3" style={{ color: "#94A3B8" }}>
+                  {c.author}
                 </p>
-                <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                  <span className="flex items-center gap-1.5 text-sm font-black text-amber-500">
-                    <Star className="w-4 h-4 fill-amber-500" /> {course.rating}
+                <div
+                  className="flex items-center justify-between pt-3"
+                  style={{ borderTop: "1px solid rgba(0,87,255,0.06)" }}
+                >
+                  <span
+                    className="flex items-center gap-1 text-xs font-bold"
+                    style={{ color: "#F59E0B" }}
+                  >
+                    <Star className="w-3.5 h-3.5 fill-current" /> {c.rating}
                   </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[11px] font-bold text-slate-400 line-through">
-                      {course.oldPrice}
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className="text-[10px] line-through"
+                      style={{ color: "#CBD5E1" }}
+                    >
+                      {c.oldPrice}
                     </span>
-                    <span className="text-base font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100">
-                      {course.price}
+                    <span
+                      className="text-sm font-black px-2.5 py-1 rounded-lg"
+                      style={{ color: C.primary, background: "#EEF3FF" }}
+                    >
+                      {c.price}
                     </span>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
         </div>
@@ -635,14 +1117,15 @@ const UserHomeView = ({ setCurrentView }) => {
 };
 
 // ============================================================================
-// COMPONENT: EXPLORE PROGRAMS (High Density eCommerce Grid)
+// EXPLORE VIEW
 // ============================================================================
 const ExploreView = () => {
   const navigate = useNavigate();
   const [search, setSearch] = useState("");
+  const [activeFilter, setActiveFilter] = useState("All");
 
   const allCourses = Array(10)
-    .fill()
+    .fill(null)
     .map((_, i) => ({
       title: [
         "Career Guidance Post 12th",
@@ -653,11 +1136,10 @@ const ExploreView = () => {
       ][i % 5],
       author: "Surabhi Dewra",
       rating: 4.8,
-      reviews: "(1.2k)",
+      reviews: "1.2k",
       enrolls: "15k+",
       oldPrice: ["₹4,999", "₹2,999", "₹3,499", "₹1,999", "₹2,499"][i % 5],
       price: ["₹1,499", "₹999", "₹1,299", "₹499", "₹799"][i % 5],
-      publisher: "CareerGuide",
       vid: [
         "Pow-yUGYbVs",
         "O12p01-ITCY",
@@ -668,366 +1150,710 @@ const ExploreView = () => {
     }));
 
   return (
-    <div className="space-y-6 max-w-[1400px] mx-auto">
-      <div className="flex flex-col sm:flex-row gap-4">
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-5 max-w-6xl mx-auto"
+    >
+      <div className="flex gap-3">
         <div className="flex-1 relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search careers, exams, or guides..."
-            className="w-full bg-white border border-slate-200 rounded-[1.5rem] pl-12 pr-4 py-4 text-sm font-bold focus:outline-none focus:border-blue-500 shadow-sm"
+            className="w-full pl-11 pr-4 py-3 rounded-2xl text-sm font-medium outline-none"
+            style={{
+              background: "white",
+              border: "1px solid rgba(0,87,255,0.1)",
+              boxShadow: "0 2px 12px rgba(0,87,255,0.04)",
+              color: C.dark,
+            }}
           />
         </div>
-        <button className="bg-white border border-slate-200 px-6 py-4 rounded-[1.5rem] flex items-center gap-2 text-sm font-black text-slate-700 shadow-sm hover:bg-slate-50 shrink-0">
-          <SlidersHorizontal className="w-5 h-5" /> Filters
+        <button
+          className="px-5 py-3 rounded-2xl flex items-center gap-2 text-sm font-semibold"
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,87,255,0.1)",
+            color: "#64748B",
+          }}
+        >
+          <SlidersHorizontal className="w-4 h-4" /> Filters
         </button>
       </div>
-
-      <div className="flex gap-3 pb-2 overflow-x-auto hide-scrollbar">
+      <div className="flex gap-2">
         {["All", "Newest", "Trending", "Most Popular"].map((f) => (
-          <button
+          <motion.button
             key={f}
-            className={`px-6 py-3 rounded-full text-xs font-black uppercase tracking-widest transition-all ${f === "All" ? "bg-slate-900 text-white shadow-md" : "bg-white text-slate-500 border border-slate-200 hover:bg-slate-50"}`}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setActiveFilter(f)}
+            className="px-5 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all"
+            style={{
+              background:
+                activeFilter === f
+                  ? `linear-gradient(135deg, ${C.primary}, #0080FF)`
+                  : "white",
+              color: activeFilter === f ? "white" : "#64748B",
+              border: `1px solid ${activeFilter === f ? "transparent" : "rgba(0,87,255,0.1)"}`,
+              boxShadow:
+                activeFilter === f ? `0 4px 14px rgba(0,87,255,0.28)` : "none",
+            }}
           >
             {f}
-          </button>
+          </motion.button>
         ))}
       </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6 pt-4">
-        {allCourses.map((course, i) => (
-          <div
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-4">
+        {allCourses.map((c, i) => (
+          <motion.div
             key={i}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.04, duration: 0.4 }}
+            whileHover={{ y: -4 }}
             onClick={() => navigate("/course")}
-            className="bg-white rounded-[2rem] border border-slate-200 overflow-hidden shadow-sm hover:shadow-[0_20px_40px_rgba(0,0,0,0.08)] hover:-translate-y-1 transition-all flex flex-col cursor-pointer group p-3.5"
+            className="rounded-2xl overflow-hidden cursor-pointer group flex flex-col"
+            style={{
+              background: "white",
+              border: "1px solid rgba(0,87,255,0.08)",
+              boxShadow: "0 2px 16px rgba(0,87,255,0.04)",
+            }}
           >
-            <div className="h-40 overflow-hidden relative rounded-[1.5rem] shadow-inner mb-4 border border-slate-100">
+            <div className="relative h-36 overflow-hidden bg-slate-100">
               <img
-                src={`https://img.youtube.com/vi/${course.vid}/maxresdefault.jpg`}
+                src={`https://img.youtube.com/vi/${c.vid}/maxresdefault.jpg`}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 alt="course"
               />
-              <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[9px] font-black text-white uppercase tracking-widest">
-                {course.publisher}
+              <div
+                className="absolute top-2 left-2 px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider text-white"
+                style={{
+                  background: "rgba(5,14,43,0.72)",
+                  backdropFilter: "blur(4px)",
+                }}
+              >
+                CareerGuide
               </div>
             </div>
-            <div className="flex flex-col flex-1 px-1">
-              <h4 className="font-black text-slate-900 text-base leading-snug mb-1 line-clamp-2">
-                {course.title}
+            <div className="p-3 flex flex-col flex-1">
+              <h4
+                className="font-bold text-sm leading-snug line-clamp-2 mb-1"
+                style={{ color: C.dark }}
+              >
+                {c.title}
               </h4>
-              <p className="text-xs text-slate-500 font-bold mb-4">
-                {course.author}
+              <p className="text-xs mb-2" style={{ color: "#94A3B8" }}>
+                {c.author}
               </p>
-
-              <div className="flex items-center gap-1.5 text-xs font-black text-amber-500 mb-1">
-                <Star className="w-4 h-4 fill-amber-500" /> {course.rating}{" "}
-                <span className="text-slate-400 font-medium">
-                  {course.reviews}
+              <div
+                className="flex items-center gap-1 text-xs font-bold mb-1"
+                style={{ color: "#F59E0B" }}
+              >
+                <Star className="w-3 h-3 fill-current" /> {c.rating}
+                <span
+                  className="font-normal ml-0.5"
+                  style={{ color: "#CBD5E1" }}
+                >
+                  ({c.reviews})
                 </span>
               </div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-5">
-                {course.enrolls}
+              <p
+                className="text-[10px] font-bold uppercase tracking-wide mb-3"
+                style={{ color: "#CBD5E1" }}
+              >
+                {c.enrolls} enrolled
               </p>
-
-              <div className="mt-auto border-t border-slate-100 pt-4 flex items-center justify-between">
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-slate-400 line-through leading-none mb-0.5">
-                    {course.oldPrice}
+              <div
+                className="mt-auto pt-3 flex items-center justify-between"
+                style={{ borderTop: "1px solid rgba(0,87,255,0.06)" }}
+              >
+                <div>
+                  <span
+                    className="text-[10px] block line-through"
+                    style={{ color: "#CBD5E1" }}
+                  >
+                    {c.oldPrice}
                   </span>
-                  <span className="font-black text-emerald-600 text-lg leading-none">
-                    {course.price}
+                  <span
+                    className="font-black text-base"
+                    style={{ color: C.dark }}
+                  >
+                    {c.price}
                   </span>
                 </div>
-                <button className="bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest px-5 py-2.5 rounded-xl hover:bg-blue-600 transition-colors shadow-md">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="text-[10px] font-black uppercase tracking-wider px-3.5 py-2 rounded-xl text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${C.primary}, #0080FF)`,
+                    boxShadow: "0 3px 10px rgba(0,87,255,0.28)",
+                  }}
+                >
                   Enroll
-                </button>
+                </motion.button>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 // ============================================================================
-// COMPONENT: MY PROGRAMS
+// MY PROGRAMS VIEW
 // ============================================================================
 const MyProgramsView = () => {
   const navigate = useNavigate();
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white p-5 rounded-[2rem] border border-slate-200 shadow-sm">
-        <div className="flex gap-2">
-          <button className="bg-slate-900 text-white px-6 py-2.5 rounded-xl text-sm font-black shadow-sm">
-            All
-          </button>
-          <button className="bg-white text-slate-600 border border-slate-200 px-6 py-2.5 rounded-xl text-sm font-bold hover:bg-slate-50">
-            In Progress
-          </button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-        {[
-          { t: "Psychometric Testing", v: "Pow-yUGYbVs" },
-          { t: "Career Options after 12th", v: "O12p01-ITCY" },
-        ].map((course, i) => (
-          <div
-            key={i}
-            onClick={() => navigate("/course")}
-            className="bg-white border border-slate-200 rounded-[2rem] p-5 shadow-sm cursor-pointer hover:shadow-[0_15px_30px_rgba(0,0,0,0.06)] transition-all hover:-translate-y-1 group"
+    <motion.div
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="max-w-5xl mx-auto space-y-6"
+    >
+      <div
+        className="flex gap-1.5 p-1 rounded-2xl w-max"
+        style={{ background: "white", border: "1px solid rgba(0,87,255,0.08)" }}
+      >
+        {["All", "In Progress", "Completed"].map((tab, i) => (
+          <button
+            key={tab}
+            className="px-5 py-2 rounded-xl text-sm font-bold transition-all"
+            style={{
+              background:
+                i === 0
+                  ? `linear-gradient(135deg, ${C.primary}, #0080FF)`
+                  : "transparent",
+              color: i === 0 ? "white" : "#64748B",
+              boxShadow: i === 0 ? "0 3px 10px rgba(0,87,255,0.25)" : "none",
+            }}
           >
-            <div className="w-full h-36 rounded-[1.5rem] overflow-hidden mb-5 shadow-inner border border-slate-100">
+            {tab}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+        {[
+          {
+            t: "Psychometric Testing",
+            v: "Pow-yUGYbVs",
+            sessions: 4,
+            progress: 50,
+          },
+          {
+            t: "Career Options after 12th",
+            v: "O12p01-ITCY",
+            sessions: 6,
+            progress: 30,
+          },
+        ].map((c, i) => (
+          <motion.div
+            key={i}
+            whileHover={{ y: -4 }}
+            onClick={() => navigate("/course")}
+            className="rounded-2xl p-4 cursor-pointer group"
+            style={{
+              background: "white",
+              border: "1px solid rgba(0,87,255,0.08)",
+              boxShadow: "0 2px 16px rgba(0,87,255,0.04)",
+            }}
+          >
+            <div className="h-32 rounded-xl overflow-hidden mb-4 bg-slate-100">
               <img
-                src={`https://img.youtube.com/vi/${course.v}/maxresdefault.jpg`}
-                alt="course"
+                src={`https://img.youtube.com/vi/${c.v}/maxresdefault.jpg`}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                alt="course"
               />
             </div>
-            <h4 className="font-black text-slate-900 text-base leading-snug mb-4">
-              {course.t}
+            <h4 className="font-bold text-sm mb-3" style={{ color: C.dark }}>
+              {c.t}
             </h4>
-            <div className="flex justify-between items-center text-xs font-bold text-slate-500">
+            <div
+              className="flex justify-between items-center text-xs mb-3"
+              style={{ color: "#94A3B8" }}
+            >
               <span className="flex items-center gap-1.5">
-                <MonitorPlay className="w-4 h-4" /> 4 Sessions
+                <MonitorPlay className="w-3.5 h-3.5" /> {c.sessions} Sessions
               </span>
-              <span className="flex items-center gap-2">
-                50%{" "}
-                <div className="w-20 h-2 bg-slate-100 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-blue-600 rounded-full"
-                    style={{ width: `50%` }}
-                  ></div>
-                </div>
+              <span className="font-bold" style={{ color: C.primary }}>
+                {c.progress}%
               </span>
             </div>
-          </div>
+            <div
+              className="h-1.5 rounded-full overflow-hidden"
+              style={{ background: "#EEF3FF" }}
+            >
+              <motion.div
+                className="h-full rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${c.progress}%` }}
+                transition={{ duration: 1.2, delay: 0.3, ease: "easeOut" }}
+                style={{
+                  background: `linear-gradient(90deg, ${C.primary}, ${C.secondary})`,
+                }}
+              />
+            </div>
+          </motion.div>
         ))}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
 // ============================================================================
-// COMPONENT: TUTOR FINANCIAL HUB
+// TUTOR FINANCIAL VIEW
 // ============================================================================
-const TutorFinancialView = () => {
-  return (
-    <div className="space-y-10 max-w-6xl mx-auto">
-      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-        {[
-          {
-            label: "Gross Revenue",
-            val: "₹2,45,000",
-            icon: <DollarSign className="w-6 h-6 text-emerald-600" />,
-            bg: "bg-emerald-50 border-emerald-100",
-            trend: "+12.5%",
-          },
-          {
-            label: "Active Scholars",
-            val: "1,204",
-            icon: <Users className="w-6 h-6 text-blue-600" />,
-            bg: "bg-blue-50 border-blue-100",
-            trend: "+8.2%",
-          },
-          {
-            label: "Live Programs",
-            val: "4",
-            icon: <MonitorPlay className="w-6 h-6 text-purple-600" />,
-            bg: "bg-purple-50 border-purple-100",
-            trend: "Live",
-          },
-        ].map((stat, i) => (
+const TutorFinancialView = () => (
+  <motion.div
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+    className="space-y-8 max-w-5xl mx-auto"
+  >
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      {[
+        {
+          label: "Gross Revenue",
+          val: "₹2,45,000",
+          icon: DollarSign,
+          color: "#10B981",
+          bg: "linear-gradient(135deg,#ECFDF5,#D1FAE5)",
+          trend: "+12.5%",
+        },
+        {
+          label: "Active Scholars",
+          val: "1,204",
+          icon: Users,
+          color: C.primary,
+          bg: `linear-gradient(135deg,#EEF3FF,#DBEAFE)`,
+          trend: "+8.2%",
+        },
+        {
+          label: "Live Programs",
+          val: "4",
+          icon: MonitorPlay,
+          color: C.secondary,
+          bg: "linear-gradient(135deg,#EAF6FF,#BAE6FD)",
+          trend: "Live",
+        },
+      ].map((s, i) => (
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.1 }}
+          whileHover={{ y: -3 }}
+          className="p-6 rounded-2xl relative overflow-hidden"
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,87,255,0.08)",
+            boxShadow: `0 4px 20px rgba(0,87,255,0.06)`,
+          }}
+        >
           <div
-            key={i}
-            className={`p-8 rounded-[2rem] border bg-white shadow-sm flex flex-col hover:shadow-lg transition-shadow`}
-          >
-            <div className="flex justify-between items-start mb-6">
-              <div
-                className={`w-14 h-14 rounded-2xl flex items-center justify-center border ${stat.bg}`}
-              >
-                {stat.icon}
-              </div>
-              <span className="text-[10px] font-black px-3 py-1.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200">
-                {stat.trend}
-              </span>
+            className="absolute top-0 right-0 w-28 h-28 rounded-full -translate-y-1/2 translate-x-1/2 opacity-60"
+            style={{ background: s.bg }}
+          />
+          <div className="flex justify-between items-start mb-5 relative z-10">
+            <div
+              className="w-11 h-11 rounded-2xl flex items-center justify-center"
+              style={{ background: s.bg }}
+            >
+              <s.icon className="w-5 h-5" style={{ color: s.color }} />
             </div>
-            <p className="text-xs font-black text-slate-400 uppercase tracking-widest mb-2">
-              {stat.label}
-            </p>
-            <p className="text-4xl font-black text-slate-900">{stat.val}</p>
+            <span
+              className="text-xs font-black px-2.5 py-1 rounded-lg"
+              style={{ background: "#F8FAFC", color: s.color }}
+            >
+              {s.trend}
+            </span>
           </div>
-        ))}
-      </section>
-    </div>
-  );
-};
-
-// ============================================================================
-// COMPONENT: ACCOUNT SETTINGS
-// ============================================================================
-const AccountSettingsView = ({ user }) => (
-  <div className="max-w-4xl space-y-6">
-    <div className="bg-white/80 backdrop-blur-xl border border-white rounded-[2.5rem] p-10 shadow-sm relative overflow-hidden">
-      <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-400/10 rounded-full blur-[80px] pointer-events-none"></div>
-
-      <div className="flex items-center gap-8 mb-10 border-b border-slate-100 pb-10 relative z-10">
-        <div className="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-blue-600 to-cyan-400 flex items-center justify-center text-4xl font-black text-white shadow-lg border-2 border-white">
-          {user?.firstName?.charAt(0) || "U"}
-        </div>
-        <div>
-          <h3 className="text-2xl font-black text-slate-900 mb-1">
-            {user?.firstName} {user?.lastName}
-          </h3>
-          <p className="text-xs font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-3 py-1.5 rounded-lg w-max border border-emerald-100 flex items-center gap-1.5">
-            <Shield className="w-3.5 h-3.5" /> Verified {user?.role}
+          <p
+            className="text-[10px] font-black uppercase tracking-[0.15em] mb-1 relative z-10"
+            style={{ color: "#94A3B8" }}
+          >
+            {s.label}
           </p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-            Email Address
-          </label>
-          <div className="relative mt-2">
-            <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="email"
-              disabled
-              value={user?.email}
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-12 pr-4 py-3.5 text-sm font-bold text-slate-500 cursor-not-allowed"
-            />
-          </div>
-        </div>
-        <div>
-          <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">
-            Mobile Number
-          </label>
-          <div className="relative mt-2">
-            <Phone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-blue-500" />
-            <input
-              type="tel"
-              placeholder="+91 9876543210"
-              className="w-full bg-white border border-blue-200 rounded-xl pl-12 pr-4 py-3.5 text-sm font-bold text-slate-900 focus:outline-none focus:ring-4 focus:ring-blue-500/10 shadow-sm"
-            />
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-8 pt-8 border-t border-slate-100 flex justify-end relative z-10">
-        <button className="bg-slate-900 text-white px-8 py-3.5 rounded-xl text-sm font-black shadow-lg hover:bg-blue-600 transition-colors">
-          Update Preferences
-        </button>
-      </div>
+          <p
+            className="text-3xl font-black relative z-10"
+            style={{ color: C.dark }}
+          >
+            {s.val}
+          </p>
+        </motion.div>
+      ))}
     </div>
-  </div>
+  </motion.div>
 );
 
 // ============================================================================
-// COMPONENT: ADMIN OVERVIEW
+// ACCOUNT SETTINGS
+// ============================================================================
+const AccountSettingsView = ({ user }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+    className="max-w-3xl"
+  >
+    <div
+      className="rounded-2xl p-8"
+      style={{
+        background: "white",
+        border: "1px solid rgba(0,87,255,0.08)",
+        boxShadow: "0 4px 24px rgba(0,87,255,0.06)",
+      }}
+    >
+      <div
+        className="flex items-center gap-6 mb-8 pb-8"
+        style={{ borderBottom: "1px solid rgba(0,87,255,0.06)" }}
+      >
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-black text-white"
+          style={{
+            background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+          }}
+        >
+          {user?.firstName?.charAt(0) || "U"}
+        </div>
+        <div>
+          <h3 className="text-xl font-black mb-1.5" style={{ color: C.dark }}>
+            {user?.firstName} {user?.lastName}
+          </h3>
+          <span
+            className="text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 w-max"
+            style={{
+              background: "#EEF3FF",
+              color: C.primary,
+              border: "1px solid rgba(0,87,255,0.12)",
+            }}
+          >
+            <Shield className="w-3 h-3" /> Verified {user?.role}
+          </span>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {[
+          {
+            label: "Email Address",
+            Icon: User,
+            placeholder: user?.email,
+            type: "email",
+            disabled: true,
+          },
+          {
+            label: "Mobile Number",
+            Icon: Phone,
+            placeholder: "+91 9876543210",
+            type: "tel",
+            disabled: false,
+          },
+        ].map((f, i) => (
+          <div key={i}>
+            <label
+              className="text-[10px] font-black uppercase tracking-[0.15em] block mb-2"
+              style={{ color: "#94A3B8" }}
+            >
+              {f.label}
+            </label>
+            <div className="relative">
+              <f.Icon className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type={f.type}
+                disabled={f.disabled}
+                defaultValue={f.disabled ? f.placeholder : undefined}
+                placeholder={!f.disabled ? f.placeholder : undefined}
+                className="w-full pl-11 pr-4 py-3 rounded-xl text-sm font-medium outline-none"
+                style={{
+                  background: f.disabled ? "#F8FAFC" : "white",
+                  border: `1px solid ${f.disabled ? "#E2E8F0" : "rgba(0,87,255,0.15)"}`,
+                  color: f.disabled ? "#94A3B8" : C.dark,
+                  cursor: f.disabled ? "not-allowed" : "auto",
+                }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div
+        className="mt-7 pt-7 flex justify-end"
+        style={{ borderTop: "1px solid rgba(0,87,255,0.06)" }}
+      >
+        <motion.button
+          whileHover={{ scale: 1.02, y: -1 }}
+          whileTap={{ scale: 0.97 }}
+          className="px-7 py-3 rounded-xl text-sm font-bold text-white"
+          style={{
+            background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+            boxShadow: "0 4px 16px rgba(0,87,255,0.3)",
+          }}
+        >
+          Update Preferences
+        </motion.button>
+      </div>
+    </div>
+  </motion.div>
+);
+
+// ============================================================================
+// ADMIN OVERVIEW
 // ============================================================================
 const AdminOverview = () => (
-  <div className="max-w-6xl mx-auto">
-    <div className="bg-white border border-slate-200 rounded-[2rem] p-10 shadow-sm flex flex-col items-center text-center">
-      <Shield className="w-20 h-20 text-slate-300 mb-6" />
-      <h2 className="text-3xl font-black text-slate-900 mb-3">
+  <motion.div
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.4 }}
+    className="max-w-5xl mx-auto"
+  >
+    <div
+      className="rounded-2xl p-16 flex flex-col items-center text-center"
+      style={{ background: "white", border: "1px solid rgba(0,87,255,0.08)" }}
+    >
+      <div
+        className="w-16 h-16 rounded-2xl flex items-center justify-center mb-5"
+        style={{ background: "linear-gradient(135deg, #EEF3FF, #DBEAFE)" }}
+      >
+        <Shield className="w-8 h-8" style={{ color: C.primary }} />
+      </div>
+      <h2 className="text-2xl font-black mb-2" style={{ color: C.dark }}>
         Platform Command Center
       </h2>
-      <p className="text-slate-500 font-medium">
+      <p className="text-sm font-medium" style={{ color: "#94A3B8" }}>
         Super Admin features are accessible through the dedicated moderation
         route.
       </p>
     </div>
+  </motion.div>
+);
+
+// ============================================================================
+// RIGHT SIDEBAR
+// ============================================================================
+const RightSidebar = () => (
+  <div className="w-[272px] h-full p-3 shrink-0 z-20 hidden xl:flex flex-col">
+    <div
+      className="flex-1 rounded-[28px] overflow-y-auto hide-scrollbar flex flex-col gap-4 p-4"
+      style={{
+        background: "rgba(255,255,255,0.88)",
+        backdropFilter: "blur(40px)",
+        border: "1px solid rgba(0,87,255,0.08)",
+        boxShadow:
+          "0 8px 40px rgba(0,87,255,0.06), inset 0 1px 0 rgba(255,255,255,0.9)",
+      }}
+    >
+      {/* Consistency */}
+      <div
+        className="rounded-2xl p-5"
+        style={{
+          background: "#F8FAFF",
+          border: "1px solid rgba(0,87,255,0.07)",
+        }}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <p
+            className="text-[9px] font-black uppercase tracking-[0.2em]"
+            style={{ color: "#94A3B8" }}
+          >
+            Consistency
+          </p>
+          <CheckCircle className="w-4 h-4" style={{ color: "#10B981" }} />
+        </div>
+        <div className="flex justify-between">
+          {["S", "M", "T", "W", "T", "F", "S"].map((d, i) => (
+            <div key={i} className="flex flex-col items-center gap-2">
+              <span
+                className="text-[9px] font-black"
+                style={{ color: "#CBD5E1" }}
+              >
+                {d}
+              </span>
+              {i === 3 ? (
+                <motion.div
+                  animate={{ scale: [1, 1.12, 1] }}
+                  transition={{ repeat: Infinity, duration: 2.5 }}
+                  className="w-8 h-8 rounded-full flex items-center justify-center"
+                  style={{
+                    background: "linear-gradient(135deg, #FFF7ED, #FED7AA)",
+                    border: "1px solid #FBD38D",
+                  }}
+                >
+                  <Flame className="w-4 h-4" style={{ color: "#F97316" }} />
+                </motion.div>
+              ) : (
+                <div
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{
+                    background:
+                      i < 3
+                        ? "linear-gradient(135deg, #EEF3FF, #DBEAFE)"
+                        : "white",
+                    border: `1px solid ${i < 3 ? "rgba(0,87,255,0.12)" : "#E2E8F0"}`,
+                    color: i < 3 ? C.primary : "#94A3B8",
+                  }}
+                >
+                  {15 + i}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Top Ranked */}
+      <div
+        className="rounded-2xl overflow-hidden"
+        style={{ background: "white", border: "1px solid rgba(0,87,255,0.08)" }}
+      >
+        <div
+          className="px-4 py-3 flex items-center justify-between"
+          style={{
+            borderBottom: "1px solid rgba(0,87,255,0.06)",
+            background: "#F8FAFF",
+          }}
+        >
+          <span
+            className="text-[9px] font-black uppercase tracking-[0.2em] flex items-center gap-1.5"
+            style={{ color: "#64748B" }}
+          >
+            <Star
+              className="w-3 h-3 fill-current"
+              style={{ color: "#F59E0B" }}
+            />{" "}
+            Top Ranked
+          </span>
+          <span
+            className="text-[9px] font-black px-2 py-0.5 rounded-md"
+            style={{ background: "#EEF3FF", color: C.primary }}
+          >
+            ✦ Special Offer
+          </span>
+        </div>
+        <div className="p-3">
+          <div className="h-20 rounded-xl overflow-hidden mb-3 bg-slate-100">
+            <img
+              src="https://images.unsplash.com/photo-1462331940025-496dfbfc7564?auto=format&fit=crop&w=400&q=80"
+              className="w-full h-full object-cover"
+              alt="top"
+            />
+          </div>
+          <h4 className="font-bold text-sm mb-0.5" style={{ color: C.dark }}>
+            Astrophysics Fundamentals
+          </h4>
+          <p className="text-[10px] mb-3" style={{ color: "#94A3B8" }}>
+            By Dr. N. Tyson
+          </p>
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
+            className="w-full py-2 rounded-xl text-[10px] font-black uppercase tracking-wider text-white"
+            style={{
+              background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+              boxShadow: "0 3px 10px rgba(0,87,255,0.25)",
+            }}
+          >
+            View Curriculum
+          </motion.button>
+        </div>
+      </div>
+
+      {/* Daily Challenge */}
+      <div
+        className="rounded-2xl p-5 relative overflow-hidden"
+        style={{
+          background: `linear-gradient(145deg, ${C.dark} 0%, #0D1A3E 100%)`,
+          border: "1px solid rgba(0,194,255,0.14)",
+          boxShadow: "0 8px 28px rgba(0,87,255,0.2)",
+        }}
+      >
+        <div
+          className="absolute top-0 right-0 w-28 h-28 rounded-full"
+          style={{
+            background: `radial-gradient(circle, rgba(0,194,255,0.15), transparent)`,
+            transform: "translate(30%,-30%)",
+          }}
+        />
+        <div className="flex items-center gap-2 mb-2">
+          <Zap className="w-4 h-4" style={{ color: C.secondary }} />
+          <p
+            className="text-[9px] font-black uppercase tracking-[0.2em]"
+            style={{ color: C.secondary }}
+          >
+            Daily Challenge
+          </p>
+        </div>
+        <h4 className="font-black text-white text-lg leading-tight mb-1.5">
+          Logic Puzzle
+        </h4>
+        <p
+          className="text-xs mb-4 leading-relaxed"
+          style={{ color: "rgba(255,255,255,0.45)" }}
+        >
+          Solve today's reasoning puzzle and earn 50 XP towards your weekly
+          goal.
+        </p>
+        <motion.button
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.97 }}
+          className="w-full py-3 rounded-xl text-xs font-black uppercase tracking-wider"
+          style={{
+            background: `linear-gradient(135deg, ${C.secondary}, ${C.primary})`,
+            color: "white",
+            boxShadow: "0 4px 16px rgba(0,194,255,0.28)",
+          }}
+        >
+          Start Quiz (+50 XP)
+        </motion.button>
+      </div>
+
+      {/* XP Progress */}
+      <div
+        className="rounded-2xl p-5"
+        style={{
+          background: "#F8FAFF",
+          border: "1px solid rgba(0,87,255,0.07)",
+        }}
+      >
+        <div className="flex justify-between items-center mb-3">
+          <p
+            className="text-[9px] font-black uppercase tracking-[0.2em]"
+            style={{ color: "#94A3B8" }}
+          >
+            Weekly XP Goal
+          </p>
+          <span className="text-xs font-black" style={{ color: C.primary }}>
+            320 / 500
+          </span>
+        </div>
+        <div
+          className="h-2 rounded-full overflow-hidden mb-2"
+          style={{ background: "#EEF3FF" }}
+        >
+          <motion.div
+            className="h-full rounded-full"
+            initial={{ width: 0 }}
+            animate={{ width: "64%" }}
+            transition={{ duration: 1.6, ease: "easeOut" }}
+            style={{
+              background: `linear-gradient(90deg, ${C.primary}, ${C.secondary})`,
+            }}
+          />
+        </div>
+        <p className="text-[10px]" style={{ color: "#94A3B8" }}>
+          180 XP to your next badge 🏆
+        </p>
+      </div>
+    </div>
   </div>
 );
 
 // ============================================================================
-// COMPONENT: RIGHT SIDEBAR (Top Ranked & Consistency)
-// ============================================================================
-const RightSidebar = () => {
-  const navigate = useNavigate();
-  return (
-    <div className="p-2 z-20 h-full flex flex-col shrink-0 w-[320px] hidden xl:flex">
-      <aside className="w-full h-full rounded-[2.5rem] bg-white/70 backdrop-blur-3xl border border-white shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col overflow-y-auto hide-scrollbar p-6 space-y-6">
-        {/* Consistency */}
-        <div className="bg-white border border-slate-100 rounded-[2rem] p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="font-black text-slate-900 text-sm uppercase tracking-widest">
-              Consistency
-            </h3>
-            <CheckCircle className="w-5 h-5 text-emerald-500" />
-          </div>
-          <div className="flex justify-between items-center">
-            {["S", "M", "T", "W", "T", "F", "S"].map((day, i) => (
-              <div key={i} className="flex flex-col items-center gap-3">
-                <span className="text-[10px] font-black text-slate-400">
-                  {day}
-                </span>
-                {i === 3 ? (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-b from-amber-100 to-orange-100 flex items-center justify-center shadow-inner border border-orange-200">
-                    <Flame className="w-5 h-5 text-orange-500" />
-                  </div>
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-sm font-black text-slate-500 border border-slate-100">
-                    {15 + i}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Top Ranked Block */}
-        <div
-          onClick={() => navigate("/course")}
-          className="bg-white border border-slate-100 rounded-[2rem] p-5 shadow-sm relative overflow-hidden cursor-pointer group hover:shadow-lg transition-shadow"
-        >
-          <div className="absolute top-4 right-4 bg-emerald-100 text-emerald-700 text-[10px] font-black px-3 py-1.5 rounded-full uppercase flex items-center gap-1.5 shadow-sm z-10 border border-emerald-200">
-            <Star className="w-3.5 h-3.5 fill-emerald-500 text-emerald-500 animate-[spin_4s_linear_infinite]" />{" "}
-            Special Offer
-          </div>
-
-          <div className="w-full h-36 bg-slate-100 rounded-[1.5rem] mb-4 overflow-hidden relative border border-slate-100 shadow-inner">
-            <img
-              src="https://img.youtube.com/vi/Pow-yUGYbVs/maxresdefault.jpg"
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-              alt="top"
-            />
-          </div>
-          <h4 className="font-black text-slate-900 text-base leading-snug">
-            Career Guidance Masterclass
-          </h4>
-          <p className="text-xs font-bold text-slate-500 mt-1 mb-4">
-            By Surabhi Dewra
-          </p>
-          <button className="w-full bg-slate-900 text-white text-xs font-black uppercase tracking-widest py-3.5 rounded-xl hover:bg-blue-600 transition-colors shadow-md">
-            Enroll Now
-          </button>
-        </div>
-
-        {/* Challenge Block */}
-        <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-[2rem] p-8 text-white shadow-xl relative overflow-hidden">
-          <Target className="w-10 h-10 text-cyan-400 mb-5" />
-          <h4 className="font-black text-xl mb-2">Daily Logic Challenge</h4>
-          <p className="text-sm font-medium text-indigo-100 mb-6 leading-relaxed">
-            Solve today's reasoning puzzle to earn 50 XP towards your weekly
-            goal.
-          </p>
-          <button className="w-full bg-cyan-500 text-slate-900 text-xs font-black uppercase tracking-widest px-4 py-3.5 rounded-[1.2rem] hover:bg-cyan-400 transition-colors shadow-lg shadow-cyan-500/30">
-            Start Quiz (+50 XP)
-          </button>
-        </div>
-      </aside>
-    </div>
-  );
-};
-
-// ============================================================================
-// COMPONENT: ADD COURSE MODAL (Editable with Details & Delete)
+// CREATE COURSE MODAL
 // ============================================================================
 const CreateCourseModal = ({
   isOpen,
@@ -1039,163 +1865,249 @@ const CreateCourseModal = ({
   updateVid,
   removeMod,
   removeVid,
-}) => {
-  return (
-    <AnimatePresence>
-      {isOpen && (
+}) => (
+  <AnimatePresence>
+    {isOpen && (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+        style={{
+          background: "rgba(5,14,43,0.55)",
+          backdropFilter: "blur(16px)",
+        }}
+      >
         <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/40 backdrop-blur-sm p-4"
+          initial={{ scale: 0.96, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.96, y: 20 }}
+          transition={spring}
+          className="w-full max-w-3xl max-h-[88vh] rounded-2xl overflow-hidden flex flex-col"
+          style={{
+            background: "white",
+            border: "1px solid rgba(0,87,255,0.12)",
+            boxShadow: "0 40px 80px rgba(0,87,255,0.16)",
+          }}
         >
-          <motion.div
-            initial={{ scale: 0.95, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.95, y: 20 }}
-            className="w-full max-w-4xl max-h-[90vh] bg-white rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col border border-white"
+          <div
+            className="px-8 py-5 flex items-center justify-between shrink-0"
+            style={{
+              borderBottom: "1px solid rgba(0,87,255,0.06)",
+              background: "#F8FAFF",
+            }}
           >
-            <div className="px-10 py-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-2xl font-black text-slate-900 flex items-center gap-3">
-                <UploadCloud className="w-6 h-6 text-blue-600" /> Add Course
-              </h2>
-              <button
-                onClick={onClose}
-                className="p-2.5 bg-white border border-slate-200 rounded-full hover:bg-slate-100 transition-colors"
+            <div className="flex items-center gap-3">
+              <div
+                className="w-9 h-9 rounded-xl flex items-center justify-center"
+                style={{
+                  background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+                }}
               >
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
+                <UploadCloud className="w-4 h-4 text-white" />
+              </div>
+              <h2 className="text-lg font-black" style={{ color: C.dark }}>
+                Add New Course
+              </h2>
             </div>
+            <motion.button
+              onClick={onClose}
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ background: "white", border: "1px solid #E2E8F0" }}
+            >
+              <X className="w-4 h-4 text-slate-500" />
+            </motion.button>
+          </div>
 
-            <div className="p-10 overflow-y-auto flex-1 hide-scrollbar space-y-10 bg-white">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                    Course Meta
-                  </h3>
+          <div className="p-8 overflow-y-auto flex-1 hide-scrollbar space-y-7">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <p
+                  className="text-[9px] font-black uppercase tracking-[0.2em]"
+                  style={{ color: "#94A3B8" }}
+                >
+                  Course Meta
+                </p>
+                {[
+                  "Course Title",
+                  "Category (e.g. Science, Career)",
+                  "Duration (e.g. 4 Weeks)",
+                ].map((ph, i) => (
                   <input
+                    key={i}
                     type="text"
-                    placeholder="Course Title"
-                    className="w-full bg-white border border-slate-200 px-5 py-4 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 shadow-sm"
+                    placeholder={ph}
+                    className="w-full px-4 py-3 rounded-xl text-sm font-medium outline-none"
+                    style={{
+                      background: "white",
+                      border: "1px solid rgba(0,87,255,0.1)",
+                      color: C.dark,
+                    }}
+                  />
+                ))}
+              </div>
+              <div className="space-y-3">
+                <p
+                  className="text-[9px] font-black uppercase tracking-[0.2em]"
+                  style={{ color: "#94A3B8" }}
+                >
+                  Pricing
+                </p>
+                <div className="relative">
+                  <DollarSign
+                    className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4"
+                    style={{ color: "#10B981" }}
                   />
                   <input
                     type="text"
-                    placeholder="Course Category (e.g. Science, Career)"
-                    className="w-full bg-white border border-slate-200 px-5 py-4 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 shadow-sm"
+                    placeholder="Selling Price"
+                    className="w-full pl-11 pr-4 py-3 rounded-xl text-sm font-medium outline-none"
+                    style={{
+                      background: "#F0FDF4",
+                      border: "1px solid #BBF7D0",
+                      color: "#065F46",
+                    }}
                   />
-                  <input
-                    type="text"
-                    placeholder="Estimated Duration (e.g. 4 Weeks)"
-                    className="w-full bg-white border border-slate-200 px-5 py-4 rounded-xl text-sm font-bold focus:outline-none focus:border-blue-500 shadow-sm"
-                  />
-                </div>
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                    Pricing
-                  </h3>
-                  <div className="relative">
-                    <DollarSign className="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-500" />
-                    <input
-                      type="text"
-                      placeholder="Selling Price"
-                      className="w-full bg-emerald-50/50 border border-emerald-200 pl-12 pr-5 py-4 rounded-xl text-sm font-bold focus:outline-none focus:border-emerald-500 shadow-sm text-emerald-700"
-                    />
-                  </div>
                 </div>
               </div>
-
-              <div className="pt-8 border-t border-slate-100">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest">
-                    Curriculum
-                  </h3>
-                  <button
-                    onClick={addModule}
-                    className="text-xs font-bold bg-slate-900 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:bg-blue-600 shadow-sm transition-colors"
+            </div>
+            <div
+              style={{ borderTop: "1px solid rgba(0,87,255,0.06)" }}
+              className="pt-6"
+            >
+              <div className="flex justify-between items-center mb-5">
+                <p
+                  className="text-[9px] font-black uppercase tracking-[0.2em]"
+                  style={{ color: "#94A3B8" }}
+                >
+                  Curriculum
+                </p>
+                <motion.button
+                  onClick={addModule}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.97 }}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-white"
+                  style={{
+                    background: `linear-gradient(135deg, ${C.primary}, #0080FF)`,
+                  }}
+                >
+                  <Plus className="w-3.5 h-3.5" /> Add Section
+                </motion.button>
+              </div>
+              <div className="space-y-3">
+                {modules.map((mod, mi) => (
+                  <div
+                    key={mod.id}
+                    className="rounded-xl overflow-hidden"
+                    style={{
+                      border: "1px solid rgba(0,87,255,0.08)",
+                      background: "white",
+                    }}
                   >
-                    <Plus className="w-4 h-4" /> Add Section
-                  </button>
-                </div>
-
-                <div className="space-y-5">
-                  {modules.map((mod, modIdx) => (
                     <div
-                      key={mod.id}
-                      className="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-sm"
+                      className="px-5 py-3.5 flex justify-between items-center gap-3"
+                      style={{
+                        background: "#F8FAFF",
+                        borderBottom: "1px solid rgba(0,87,255,0.06)",
+                      }}
                     >
-                      <div className="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center gap-4">
-                        <div className="flex items-center gap-3 flex-1">
-                          <Folder className="w-6 h-6 text-blue-500 fill-blue-500/20 shrink-0" />
-                          <input
-                            type="text"
-                            value={mod.title}
-                            onChange={(e) => updateMod(modIdx, e.target.value)}
-                            className="bg-transparent border-none outline-none font-black text-slate-900 w-full focus:ring-0 placeholder-slate-400 text-base"
-                          />
-                        </div>
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            onClick={() => removeMod(modIdx)}
-                            className="w-10 h-10 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-rose-400 hover:text-rose-600 hover:border-rose-200 shadow-sm transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => addVideo(modIdx)}
-                            className="w-10 h-10 bg-slate-900 text-white rounded-xl flex items-center justify-center hover:bg-blue-600 shadow-sm transition-colors"
-                          >
-                            <Plus className="w-5 h-5" />
-                          </button>
-                        </div>
+                      <div className="flex items-center gap-2.5 flex-1">
+                        <Folder
+                          className="w-4 h-4 shrink-0"
+                          style={{ color: C.primary }}
+                        />
+                        <input
+                          type="text"
+                          value={mod.title}
+                          onChange={(e) => updateMod(mi, e.target.value)}
+                          className="bg-transparent border-none outline-none text-sm font-bold w-full"
+                          style={{ color: C.dark }}
+                        />
                       </div>
-                      <div className="p-3 space-y-2">
-                        {mod.videos.map((vid, vIdx) => (
-                          <div
-                            key={vIdx}
-                            className="flex items-center gap-4 px-5 py-3 hover:bg-slate-50 rounded-xl group transition-colors"
-                          >
-                            <Video className="w-5 h-5 text-slate-400 shrink-0" />
-                            <input
-                              type="text"
-                              value={vid}
-                              onChange={(e) =>
-                                updateVid(modIdx, vIdx, e.target.value)
-                              }
-                              placeholder="Video Title..."
-                              className="bg-transparent border-none outline-none text-sm font-bold text-slate-700 w-full focus:ring-0"
-                            />
-                            <button
-                              onClick={() => removeVid(modIdx, vIdx)}
-                              className="text-rose-400 hover:text-rose-600 p-2 opacity-0 group-hover:opacity-100 transition-opacity"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        ))}
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => removeMod(mi)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-red-50 transition-colors"
+                          style={{ border: "1px solid #E2E8F0" }}
+                        >
+                          <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                        </button>
+                        <button
+                          onClick={() => addVideo(mi)}
+                          className="w-7 h-7 rounded-lg flex items-center justify-center text-white"
+                          style={{
+                            background: `linear-gradient(135deg, ${C.primary}, #0080FF)`,
+                          }}
+                        >
+                          <Plus className="w-4 h-4" />
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                    <div className="p-2 space-y-1">
+                      {mod.videos.map((vid, vi) => (
+                        <div
+                          key={vi}
+                          className="flex items-center gap-3 px-4 py-2.5 rounded-lg group hover:bg-slate-50 transition-colors"
+                        >
+                          <Video className="w-3.5 h-3.5 shrink-0 text-slate-400" />
+                          <input
+                            type="text"
+                            value={vid}
+                            onChange={(e) => updateVid(mi, vi, e.target.value)}
+                            placeholder="Video Title..."
+                            className="bg-transparent border-none outline-none text-sm flex-1 font-medium"
+                            style={{ color: C.dark }}
+                          />
+                          <button
+                            onClick={() => removeVid(mi, vi)}
+                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-400" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
+          </div>
 
-            <div className="px-10 py-6 bg-slate-50 border-t border-slate-100 flex justify-end gap-5">
-              <button
-                onClick={onClose}
-                className="px-8 py-3.5 rounded-xl text-sm font-black text-slate-500 hover:bg-slate-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={onClose}
-                className="px-8 py-3.5 rounded-xl text-sm font-black bg-slate-900 text-white shadow-lg hover:bg-blue-600 transition-colors"
-              >
-                Publish Content
-              </button>
-            </div>
-          </motion.div>
+          <div
+            className="px-8 py-5 flex justify-end gap-3 shrink-0"
+            style={{
+              borderTop: "1px solid rgba(0,87,255,0.06)",
+              background: "#F8FAFF",
+            }}
+          >
+            <button
+              onClick={onClose}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold"
+              style={{
+                color: "#64748B",
+                background: "white",
+                border: "1px solid #E2E8F0",
+              }}
+            >
+              Cancel
+            </button>
+            <motion.button
+              onClick={onClose}
+              whileHover={{ scale: 1.02, y: -1 }}
+              whileTap={{ scale: 0.97 }}
+              className="px-6 py-2.5 rounded-xl text-sm font-bold text-white"
+              style={{
+                background: `linear-gradient(135deg, ${C.primary}, ${C.secondary})`,
+                boxShadow: "0 4px 16px rgba(0,87,255,0.3)",
+              }}
+            >
+              Publish Content
+            </motion.button>
+          </div>
         </motion.div>
-      )}
-    </AnimatePresence>
-  );
-};
+      </motion.div>
+    )}
+  </AnimatePresence>
+);
