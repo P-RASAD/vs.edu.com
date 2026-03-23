@@ -89,11 +89,11 @@ export default function Login() {
           }
 
           // 2. Return user data (without password) and a dummy token
-          const { password, ...userWithoutPassword } = user;
+          // const { password, ...userWithoutPassword } = user;
           resolve({
             data: {
               message: "Login successful",
-              user: userWithoutPassword,
+              // user: userWithoutPassword,
               token: "dummy_jwt_token_12345",
             },
           });
@@ -123,11 +123,11 @@ export default function Login() {
         const profileData = res.data.user;
 
         // Save session data locally
-        localStorage.setItem(
-          "vsintellecta_active_user",
-          JSON.stringify(profileData),
-        );
-        localStorage.setItem("vsintellecta_token", res.data.token);
+        // localStorage.setItem(
+        //   "vsintellecta_active_user",
+        //   JSON.stringify(profileData),
+        // );
+        // localStorage.setItem("vsintellecta_token", res.data.token);
 
         // Route based on role
         if (profileData.role === "tutor") {
@@ -149,7 +149,7 @@ export default function Login() {
 
         // To integrate real API later, replace mockApiCall with:
         // const res = await axios.post('https://api.yourdomain.com/register', formData)
-        const res = await mockApiCall("/api/register", formData);
+        // const res = await mockApiCall("/api/register", formData);
 
         setSuccessMsg("Account created successfully! Please sign in.");
 

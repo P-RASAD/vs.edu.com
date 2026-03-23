@@ -71,7 +71,7 @@ const fadeUp = {
 // ============================================================================
 export default function Dashboard() {
   const navigate = useNavigate();
-  const [activeUser, setActiveUser] = useState(null);
+  // const [activeUser, setActiveUser] = useState(null);
   const [currentView, setCurrentView] = useState("dashboard");
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
   const [modules, setModules] = useState([
@@ -82,18 +82,18 @@ export default function Dashboard() {
     },
   ]);
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    const userStr = localStorage.getItem("vsintellecta_active_user");
-    if (userStr) {
-      const user = JSON.parse(userStr);
-      setActiveUser(user);
-      if (user.role === "superadmin" || user.role === "admin")
-        setCurrentView("admin-hub");
-    } else {
-      navigate("/login");
-    }
-  }, [navigate]);
+  // useEffect(() => {
+  // window.scrollTo(0, 0);
+  // const userStr = localStorage.getItem("vsintellecta_active_user");
+  // if (userStr) {
+  //   const user = JSON.parse(userStr);
+  //   setActiveUser(user);
+  //   if (user.role === "superadmin" || user.role === "admin")
+  //     setCurrentView("admin-hub");
+  // } else {
+  // navigate("/login");
+  // }
+  // }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("vsintellecta_active_user");
@@ -132,25 +132,12 @@ export default function Dashboard() {
     setModules(m);
   };
 
-  const fName = activeUser?.firstName || activeUser?.first_name || "Avinash";
-  const role = activeUser?.role || "learner";
+  const fName = "Avinash";
+  const role = "learner";
   const isTutor = role === "tutor";
   const isAdminOrSuper = role === "admin" || role === "superadmin";
 
-  if (!activeUser)
-    return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: C.surface }}
-      >
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          className="w-10 h-10 rounded-full border-[3px] border-transparent"
-          style={{ borderTopColor: C.primary, borderRightColor: C.secondary }}
-        />
-      </div>
-    );
+  // if (!activeUser) return <div className="min-h-screen bg-[#F4F7FE]"></div>;
 
   return (
     <div
@@ -190,13 +177,47 @@ export default function Dashboard() {
       />
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
-        <TopBar
-          fName={fName}
-          isTutor={isTutor}
-          currentView={currentView}
-          onAddCourse={() => setIsCourseModalOpen(true)}
-        />
-        <div className="flex-1 overflow-y-auto px-8 pb-20 pt-6 hide-scrollbar">
+        <header className="h-28 px-10 flex items-center justify-between shrink-0">
+          <div>
+            <h2 className="text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              {currentView === "dashboard"
+                ? `Good Morning, ${fName}`
+                : currentView === "explore"
+                  ? "All Courses Catalog"
+                  : currentView === "my-programs"
+                    ? "My Enrolled Programs"
+                    : currentView === "tutor-hub"
+                      ? "Instructor Financials"
+                      : "Account Details"}
+              {isTutor && currentView === "dashboard" && (
+                <Medal className="w-8 h-8 text-amber-400 fill-amber-400 drop-shadow-md" />
+              )}
+            </h2>
+            {isTutor && currentView === "dashboard" ? (
+              <p className="text-sm font-bold text-emerald-600 mt-2 flex items-center gap-1.5 bg-emerald-50 w-max px-3 py-1 rounded-full border border-emerald-100 shadow-sm">
+                <TrendingUp className="w-4 h-4" /> Profit increased by 18.5%
+                from last month
+              </p>
+            ) : (
+              <p className="text-sm font-medium text-slate-500 mt-1">
+                Ready to enhance your skills today?
+              </p>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            {isTutor && (
+              <button
+                // onClick={() => setIsCourseModalOpen(true)}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 rounded-full text-sm font-black shadow-[0_8px_20px_rgba(37,99,235,0.3)] hover:shadow-[0_12px_25px_rgba(37,99,235,0.4)] transition-all flex items-center gap-2 transform hover:-translate-y-1"
+              >
+                <UploadCloud className="w-5 h-5" /> Add Course
+              </button>
+            )}
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto px-10 pb-24 hide-scrollbar relative">
           <AnimatePresence mode="wait">
             {currentView === "dashboard" && (
               <UserHomeView
@@ -205,13 +226,13 @@ export default function Dashboard() {
                 isTutor={isTutor}
               />
             )}
-            {currentView === "explore" && <ExploreView key="explore" />}
-            {currentView === "my-programs" && <MyProgramsView key="programs" />}
-            {currentView === "tutor-hub" && <TutorFinancialView key="tutor" />}
-            {currentView === "settings" && (
-              <AccountSettingsView key="settings" user={activeUser} />
-            )}
-            {currentView === "admin-hub" && <AdminOverview key="admin" />}
+            {currentView === "explore" && <ExploreView />}
+            {currentView === "my-programs" && <MyProgramsView />}
+            {currentView === "tutor-hub" && <TutorFinancialView />}
+            {/* {currentView === "settings" && (
+              <AccountSettingsView user={activeUser} />
+            )} */}
+            {currentView === "admin-hub" && <AdminOverview />}
           </AnimatePresence>
         </div>
       </main>

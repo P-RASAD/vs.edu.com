@@ -32,12 +32,21 @@ export default function Profile() {
   // Load real user data from our mock local storage database!
   useEffect(() => {
     const storedUser = localStorage.getItem("vsintellecta_active_user");
+    console.log('storedUser: ', storedUser);
     if (storedUser) {
-      setUserData(JSON.parse(storedUser));
+  //     setUserData({
+  //   firstName: "Student",
+  //   lastName: "User",
+  //   username: "student123",
+  //   email: "student@example.com",
+  //   mobile: "+91 00000 00000",
+  //   role: "learner",
+  // });
     }
-  }, []);
+  }, [userData]);
 
   const handleLogout = () => {
+    setUserData({})
     localStorage.removeItem("vsintellecta_active_user");
     navigate("/login");
   };

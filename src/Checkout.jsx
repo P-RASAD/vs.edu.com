@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   ArrowLeft,
   CreditCard,
@@ -22,14 +22,14 @@ export default function Checkout() {
   const [userEmail, setUserEmail] = useState("");
 
   // Fetch logged-in user's email
-  useEffect(() => {
-    const activeUser = JSON.parse(
-      localStorage.getItem("vsintellecta_active_user"),
-    );
-    if (activeUser) {
-      setUserEmail(activeUser.email);
-    }
-  }, []);
+  // useEffect(() => {
+    // const activeUser = JSON.parse(
+    //   localStorage.getItem("vsintellecta_active_user"),
+    // );
+    // if (activeUser) {
+    //   setUserEmail(activeUser.email);
+    // }
+  // }, []);
 
   const cartItems = [
     {
