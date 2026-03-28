@@ -9,7 +9,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { useAuth } from "./context/AuthContext";
+// import { useAuth } from "./context/AuthContext";
 import { AdminService } from "./services/api";
 
 const toastOK  = { borderRadius: "12px", background: "#0f172a", color: "#fff", fontSize: "13px", fontWeight: 600 };
@@ -19,7 +19,7 @@ const pageV = { initial: { opacity: 0, y: 12 }, in: { opacity: 1, y: 0 }, out: {
 
 export default function SuperAdmin() {
   const navigate        = useNavigate();
-  const { logout }      = useAuth();
+  // const { logout }      = useAuth();
   const [activeTab,     setActiveTab]     = useState("overview");
   const [reviewingCourse, setReviewingCourse] = useState(null);
   const [activeVideo,   setActiveVideo]   = useState("");
@@ -101,7 +101,7 @@ export default function SuperAdmin() {
     finally { setActioning(null); }
   };
 
-  const handleLogout = () => { logout(); navigate("/"); };
+  // const handleLogout = () => { logout(); navigate("/"); };
 
   const statCards = stats ? [
     { title: "Total Revenue",     value: stats.totalPlatformRevenue, trend: "+14.2%", isUp: true,  icon: <DollarSign className="w-6 h-6 text-purple-600" />, bg: "bg-purple-100" },
@@ -157,7 +157,8 @@ export default function SuperAdmin() {
               <p className="text-xs text-slate-500 font-medium">System Owner</p>
             </div>
           </div>
-          <button onClick={handleLogout}
+          <button
+            // onClick={handleLogout}
             className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors">
             <LogOut className="w-4 h-4" /> Sign Out
           </button>

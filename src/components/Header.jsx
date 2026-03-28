@@ -16,13 +16,13 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+// import { useAuth } from "../context/AuthContext";
 import { CartService } from "../services/api";
 
 export default function Header() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, isLoggedIn, logout, dashboardRoute } = useAuth();
+  // const { user, isLoggedIn, logout, dashboardRoute } = useAuth();
 
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -94,16 +94,16 @@ export default function Header() {
   ];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  const handleLogout = () => {
-    logout();
-    setIsProfileOpen(false);
-    navigate("/");
-  };
+  // const handleLogout = () => {
+  //   logout();
+  //   setIsProfileOpen(false);
+  //   navigate("/");
+  // };
 
-  const fName = user?.firstName || "User";
-  const lName = user?.lastName || "";
+  const fName = "User";
+  const lName =  "";
   const initial = fName.charAt(0).toUpperCase();
-  const role = user?.role || "learner";
+  const role = "learner";
 
   return (
     <>
@@ -258,7 +258,7 @@ export default function Header() {
 
           {/* ── Right actions ── */}
           <div className="flex items-center gap-3 shrink-0">
-            {isLoggedIn ? (
+            {/* {isLoggedIn ? ( */}
               <>
                 {/* Cart */}
                 <button
@@ -363,7 +363,7 @@ export default function Header() {
                           </p>
                         </div>
                         <div
-                          onClick={() => navigate(dashboardRoute())}
+                          // onClick={() => navigate(dashboardRoute())}
                           className="flex items-center gap-3 px-5 py-2.5 hover:bg-blue-50 cursor-pointer group"
                         >
                           <LayoutDashboard className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
@@ -396,7 +396,7 @@ export default function Header() {
                         </div>
                         <div className="border-t border-slate-100 mt-2 pt-2">
                           <div
-                            onClick={handleLogout}
+                            // onClick={handleLogout}
                             className="flex items-center gap-3 px-5 py-2.5 hover:bg-rose-50 cursor-pointer group"
                           >
                             <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600" />
@@ -427,7 +427,7 @@ export default function Header() {
                   Join Us <Zap className="w-3.5 h-3.5 text-amber-400" />
                 </motion.button>
               </div>
-            )}
+            {/* )} */}
 
             <button
               className="md:hidden p-2 text-slate-600"
@@ -462,11 +462,11 @@ export default function Header() {
               >
                 Explore Courses
               </button>
-              {isLoggedIn ? (
-                <>
+              {/* {isLoggedIn ? (
+                <> */}
                   <button
                     onClick={() => {
-                      navigate(dashboardRoute());
+                      // navigate(dashboardRoute());
                       setIsMobileOpen(false);
                     }}
                     className="text-left py-2 border-b border-slate-100 text-blue-600"
@@ -492,13 +492,13 @@ export default function Header() {
                     Profile Settings
                   </button>
                   <button
-                    onClick={handleLogout}
+                    // onClick={handleLogout}
                     className="text-left py-2 text-rose-600"
                   >
                     Sign Out
                   </button>
-                </>
-              ) : (
+                {/* </>
+              ) : ( */}
                 <div className="flex flex-col gap-3 mt-2">
                   <button
                     onClick={() => {
@@ -510,7 +510,7 @@ export default function Header() {
                     Log In / Join Us
                   </button>
                 </div>
-              )}
+              {/* )} */}
             </div>
           </motion.div>
         )}
