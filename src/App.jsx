@@ -2,7 +2,7 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-import { AuthProvider, useAuth } from "./context/AuthContext";
+// import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // ── Lazy pages ──
 const LandingPage = lazy(() => import("./LandingPage"));
@@ -24,20 +24,20 @@ const Loader = () => (
 );
 
 // ── Protected route wrapper ──
-function ProtectedRoute({ children, allowedRoles }) {
-  const { user, loading } = useAuth();
-  if (loading) return <Loader />;
-  if (!user) return <Navigate to="/login" replace />;
-  if (allowedRoles && !allowedRoles.includes(user.role))
-    return <Navigate to="/dashboard" replace />;
+function ProtectedRoute({ children }) {
+  // const { user, loading } = useAuth();
+  // if (loading) return <Loader />;
+  // if (!user) return <Navigate to="/login" replace />;
+  // if (allowedRoles && !allowedRoles.includes(user.role))
+  //   return <Navigate to="/dashboard" replace />;
   return children;
 }
 
 // ── Public-only route (redirect logged-in users away from /login) ──
 function PublicRoute({ children }) {
-  const { user, loading, dashboardRoute } = useAuth();
-  if (loading) return <Loader />;
-  if (user) return <Navigate to={dashboardRoute()} replace />;
+  // const { user, loading, dashboardRoute } = useAuth();
+  // if (loading) return <Loader />;
+  // if (user) return <Navigate to={dashboardRoute()} replace />;
   return children;
 }
 
@@ -132,10 +132,10 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
+      {/* <AuthProvider> */}
         <Toaster position="top-right" />
         <AppRoutes />
-      </AuthProvider>
+      {/* </AuthProvider> */}
     </BrowserRouter>
   );
 }

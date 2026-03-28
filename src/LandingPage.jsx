@@ -327,9 +327,16 @@ function CourseCarousel({ cards, onCardClick }) {
       if (posRef.current >= half) posRef.current = 0;
       trackRef.current.scrollLeft = posRef.current;
     }
-    fidRef.current = requestAnimationFrame(scroll);
   }, []);
 
+  useEffect(() => {
+  fidRef.current = requestAnimationFrame(scroll);
+  
+  return () => {
+    cancelAnimationFrame(fidRef.current);
+  };
+  }, [scroll]);
+  
   useEffect(() => {
     fidRef.current = requestAnimationFrame(scroll);
     return () => cancelAnimationFrame(fidRef.current);

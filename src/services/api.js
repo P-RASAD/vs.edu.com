@@ -9,31 +9,29 @@
 //   ProfileService  → /users/me, /users/me (PATCH)
 //   PaymentService  → /payments/checkout
 // ─────────────────────────────────────────────────────────────────────────────
-import axios from "axios";
+import axios from "axios"
 
 const BASE_URL =
-  import.meta.env.VITE_API_URL || "https://api.vsintellecta.com/v1";
+  import.meta.env.VITE_API_URL || "https://api.vsintellecta.com/v1"
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
   headers: { "Content-Type": "application/json" },
-});
+})
 
 // Auto-attach JWT
 apiClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("vsintellecta_token");
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
+    const token = localStorage.getItem("vsintellecta_token")
+    if (token) config.headers.Authorization = `Bearer ${token}`
+    return config
   },
   (error) => Promise.reject(error),
-);
+)
 
 // ── Mock engine ──
 const simulateRequest = (mockData, delay = 750) =>
-  new Promise((resolve) =>
-    setTimeout(() => resolve({ data: mockData }), delay),
-  );
+  new Promise((resolve) => setTimeout(() => resolve({ data: mockData }), delay))
 
 // ─────────────────────────────────────────────
 // AUTH
@@ -46,8 +44,8 @@ export const AuthService = {
       "tutor@vs.com": "tutor",
       "admin@vs.com": "admin",
       "superadmin@vs.com": "superadmin",
-    };
-    const role = roleMap[credentials.identifier] || "learner";
+    }
+    const role = roleMap[credentials.identifier] || "learner"
     return simulateRequest({
       token: `mock_jwt_${role}_token_123`,
       user: {
@@ -60,20 +58,20 @@ export const AuthService = {
         mobile: "+91 9876543210",
         avatar: null,
       },
-    });
+    })
   },
 
-  register: async (userData) => {
-    // REAL: return await apiClient.post('/auth/register', userData);
-    return simulateRequest({ message: "User registered successfully" });
-  },
-};
+  // register: async (userData) => {
+  //   // REAL: return await apiClient.post('/auth/register', userData);
+  //   return simulateRequest({ message: "User registered successfully" });
+  // },
+}
 
 // ─────────────────────────────────────────────
 // COURSES
 // ─────────────────────────────────────────────
 export const CourseService = {
-  getAllCourses: async (filters = {}) => {
+  getAllCourses: async () => {
     // REAL: return await apiClient.get('/courses', { params: filters });
     return simulateRequest([
       {
@@ -148,7 +146,7 @@ export const CourseService = {
         img: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80",
         vid: "4RjPZnatm8M",
       },
-    ]);
+    ])
   },
 
   getCourseById: async (id) => {
@@ -251,7 +249,7 @@ export const CourseService = {
         },
         { id: "r4", name: "Module 1 Notes.pdf", size: "560 KB", type: "pdf" },
       ],
-    });
+    })
   },
 
   getMyPrograms: async () => {
@@ -271,19 +269,19 @@ export const CourseService = {
         videoId: "p1Zle7wRG7E",
         sessions: 8,
       },
-    ]);
+    ])
   },
 
-  enroll: async (courseId) => {
+  enroll: async () => {
     // REAL: return await apiClient.post(`/courses/${courseId}/enroll`);
-    return simulateRequest({ message: "Successfully enrolled" });
+    return simulateRequest({ message: "Successfully enrolled" })
   },
 
-  saveProgress: async (courseId, videoId) => {
+  saveProgress: async () => {
     // REAL: return await apiClient.post(`/courses/${courseId}/progress`, { videoId, completed: true });
-    return simulateRequest({ message: "Progress saved" }, 400);
+    return simulateRequest({ message: "Progress saved" }, 400)
   },
-};
+}
 
 // ─────────────────────────────────────────────
 // CART
@@ -291,45 +289,42 @@ export const CourseService = {
 export const CartService = {
   getCart: async () => {
     // REAL: return await apiClient.get('/cart');
-    const cart = JSON.parse(localStorage.getItem("vsintellecta_cart") || "[]");
-    return simulateRequest(cart, 200);
+    const cart = JSON.parse(localStorage.getItem("vsintellecta_cart") || "[]")
+    return simulateRequest(cart, 200)
   },
 
   addToCart: async (course) => {
     // REAL: return await apiClient.post('/cart', { courseId: course.id });
-    const cart = JSON.parse(localStorage.getItem("vsintellecta_cart") || "[]");
-    const exists = cart.find((c) => c.id === course.id);
+    const cart = JSON.parse(localStorage.getItem("vsintellecta_cart") || "[]")
+    const exists = cart.find((c) => c.id === course.id)
     if (!exists) {
-      cart.push(course);
-      localStorage.setItem("vsintellecta_cart", JSON.stringify(cart));
+      cart.push(course)
+      localStorage.setItem("vsintellecta_cart", JSON.stringify(cart))
     }
-    return simulateRequest({ message: "Added to cart", cart }, 200);
+    return simulateRequest({ message: "Added to cart", cart }, 200)
   },
 
   removeFromCart: async (courseId) => {
     // REAL: return await apiClient.delete(`/cart/${courseId}`);
-    const cart = JSON.parse(localStorage.getItem("vsintellecta_cart") || "[]");
-    const updated = cart.filter((c) => c.id !== courseId);
-    localStorage.setItem("vsintellecta_cart", JSON.stringify(updated));
-    return simulateRequest(
-      { message: "Removed from cart", cart: updated },
-      200,
-    );
+    const cart = JSON.parse(localStorage.getItem("vsintellecta_cart") || "[]")
+    const updated = cart.filter((c) => c.id !== courseId)
+    localStorage.setItem("vsintellecta_cart", JSON.stringify(updated))
+    return simulateRequest({ message: "Removed from cart", cart: updated }, 200)
   },
 
   clearCart: async () => {
-    localStorage.removeItem("vsintellecta_cart");
-    return simulateRequest({ message: "Cart cleared" }, 200);
+    localStorage.removeItem("vsintellecta_cart")
+    return simulateRequest({ message: "Cart cleared" }, 200)
   },
-};
+}
 
 // ─────────────────────────────────────────────
 // TUTOR
 // ─────────────────────────────────────────────
 export const TutorService = {
-  createCourse: async (courseData) => {
+  createCourse: async () => {
     // REAL: return await apiClient.post('/tutors/courses', courseData);
-    return simulateRequest({ message: "Course submitted for admin approval" });
+    return simulateRequest({ message: "Course submitted for admin approval" })
   },
 
   getAnalytics: async () => {
@@ -339,7 +334,7 @@ export const TutorService = {
       activeScholars: 1204,
       livePrograms: 4,
       avgRating: 4.8,
-    });
+    })
   },
 
   getLiveClasses: async () => {
@@ -359,17 +354,17 @@ export const TutorService = {
         enrolled: 210,
         meetLink: "https://meet.google.com/xyz-uvw-rst",
       },
-    ]);
+    ])
   },
 
-  scheduleLiveClass: async (data) => {
+  scheduleLiveClass: async () => {
     // REAL: return await apiClient.post('/tutors/live-classes', data);
     return simulateRequest({
       message: "Live class scheduled",
       meetLink: "https://meet.google.com/new-link",
-    });
+    })
   },
-};
+}
 
 // ─────────────────────────────────────────────
 // ADMIN / SUPER ADMIN
@@ -383,7 +378,7 @@ export const AdminService = {
       publishedCourses: 142,
       platformProfit: "₹37.2 L",
       pendingApprovals: 4,
-    });
+    })
   },
 
   getUsers: async () => {
@@ -425,7 +420,7 @@ export const AdminService = {
         joined: "Oct 10",
         courses: 2,
       },
-    ]);
+    ])
   },
 
   getPendingCourses: async () => {
@@ -491,12 +486,12 @@ export const AdminService = {
           },
         ],
       },
-    ]);
+    ])
   },
 
   moderateCourse: async (courseId, status) => {
     // REAL: return await apiClient.patch(`/admin/courses/${courseId}/moderate`, { status });
-    return simulateRequest({ message: `Course ${status} successfully` });
+    return simulateRequest({ message: `Course ${status} successfully` })
   },
 
   getTransactions: async () => {
@@ -526,9 +521,9 @@ export const AdminService = {
         date: "Oct 14",
         status: "Completed",
       },
-    ]);
+    ])
   },
-};
+}
 
 // ─────────────────────────────────────────────
 // PROFILE
@@ -538,31 +533,31 @@ export const ProfileService = {
     // REAL: return await apiClient.get('/users/me');
     const u = JSON.parse(
       localStorage.getItem("vsintellecta_active_user") || "{}",
-    );
-    return simulateRequest(u);
+    )
+    return simulateRequest(u)
   },
 
   updateProfile: async (data) => {
     // REAL: return await apiClient.patch('/users/me', data);
     const u = JSON.parse(
       localStorage.getItem("vsintellecta_active_user") || "{}",
-    );
-    const updated = { ...u, ...data };
-    localStorage.setItem("vsintellecta_active_user", JSON.stringify(updated));
-    return simulateRequest({ message: "Profile updated", user: updated });
+    )
+    const updated = { ...u, ...data }
+    localStorage.setItem("vsintellecta_active_user", JSON.stringify(updated))
+    return simulateRequest({ message: "Profile updated", user: updated })
   },
-};
+}
 
 // ─────────────────────────────────────────────
 // PAYMENT
 // ─────────────────────────────────────────────
 export const PaymentService = {
-  checkout: async (payload) => {
+  checkout: async () => {
     // REAL: return await apiClient.post('/payments/checkout', payload);
     // payload: { courseIds, paymentMethod, email }
     return simulateRequest(
       { message: "Payment successful", orderId: `ORD-${Date.now()}` },
       2000,
-    );
+    )
   },
-};
+}

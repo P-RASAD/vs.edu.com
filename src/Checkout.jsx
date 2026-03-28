@@ -19,7 +19,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { useAuth } from "./context/AuthContext";
+// import { useAuth } from "./context/AuthContext";
 import { CartService, PaymentService } from "./services/api";
 
 const toastOK = {
@@ -40,14 +40,14 @@ const toastErr = {
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  // const { user } = useAuth();
 
   const [paymentMethod, setPaymentMethod] = useState("card");
   const [isProcessing, setIsProcessing] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [loadingCart, setLoadingCart] = useState(true);
   const [removing, setRemoving] = useState(null);
-  const [email, setEmail] = useState(user?.email || "");
+  const [email, setEmail] = useState("");
   const [step, setStep] = useState("cart"); // "cart" | "payment" | "success"
 
   // Load cart from API/localStorage
@@ -251,7 +251,7 @@ export default function Checkout() {
                       label: "UPI / QR",
                       color: "purple",
                     },
-                  ].map(({ id, icon: Icon, label, color }) => (
+                  ].map(({ id, label, color }) => (
                     <div
                       key={id}
                       onClick={() => setPaymentMethod(id)}
@@ -261,9 +261,9 @@ export default function Checkout() {
                           : "border-slate-200 hover:border-slate-300 text-slate-600"
                       }`}
                     >
-                      <Icon
+                      {/* <Icon
                         className={`w-5 h-5 ${paymentMethod === id ? `text-${color}-600` : "text-slate-400"}`}
-                      />
+                      /> */}
                       <span className="text-sm font-bold">{label}</span>
                     </div>
                   ))}
@@ -504,7 +504,7 @@ export default function Checkout() {
                   title: "Money-Back Guarantee",
                   sub: "7 days, no questions asked.",
                 },
-              ].map(({ icon: Icon, color, title, sub }) => (
+              ].map(({ color, title, sub }) => (
                 <div
                   key={title}
                   className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl p-3 backdrop-blur-sm"
@@ -512,7 +512,7 @@ export default function Checkout() {
                   <div
                     className={`w-8 h-8 rounded-full bg-${color}-500/20 flex items-center justify-center shrink-0`}
                   >
-                    <Icon className={`w-4 h-4 text-${color}-400`} />
+                    {/* <Icon className={`w-4 h-4 text-${color}-400`} /> */}
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-white">{title}</h5>

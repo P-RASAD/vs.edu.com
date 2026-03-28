@@ -1,35 +1,39 @@
 // src/context/AuthContext.jsx
-// ─────────────────────────────────────────────────────────────────────────────
-// Global auth state. Wrap <App /> with <AuthProvider>.
-// Any component: const { user, login, logout, isLoggedIn } = useAuth();
-// ─────────────────────────────────────────────────────────────────────────────
 import React, {
   createContext,
-  useContext,
   useState,
   useEffect,
   useCallback,
+  useMemo,
 } from "react";
 import { AuthService } from "../services/api";
 
 const AuthContext = createContext(null);
 
+const TOKEN_KEY = "vsintellecta_token";
+const USER_KEY = "vsintellecta_active_user";
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
-  const [loading, setLoading] = useState(true); // hydration guard
+  const [loading, setLoading] = useState(true);
 
-  // Hydrate from localStorage on mount
+  // ── Hydrate ──
   useEffect(() => {
     try {
-      const storedToken = localStorage.getItem("vsintellecta_token");
-      const storedUser = localStorage.getItem("vsintellecta_active_user");
-      if (storedToken && storedUser) {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedUser = localStorage.getItem(USER_KEY);
+
+      if (storedToken) {
         setToken(storedToken);
+      }
+
+      if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
-    } catch {
-      /* corrupt storage — ignore */
+    } catch (err) {
+      console.error("Auth hydration error:", err);
+      localStorage.removeItem(USER_KEY);
     } finally {
       setLoading(false);
     }
@@ -37,70 +41,94 @@ export function AuthProvider({ children }) {
 
   // ── Login ──
   const login = useCallback(async (credentials) => {
-    // WIRE: AuthService.login → POST /auth/login
-    const res = await AuthService.login(credentials);
-    const { token: t, user: u } = res.data;
-    setToken(t);
-    setUser(u);
-    localStorage.setItem("vsintellecta_token", t);
-    localStorage.setItem("vsintellecta_active_user", JSON.stringify(u));
-    return u; // return so callers can redirect by role
+    try {
+      const res = await AuthService.login(credentials);
+      const { token: t, user: u } = res.data;
+
+      setToken(t);
+      setUser(u);
+
+      localStorage.setItem(TOKEN_KEY, t);
+      localStorage.setItem(USER_KEY, JSON.stringify(u));
+
+      return u;
+    } catch (err) {
+      console.error("Login failed:", err);
+      throw err; // important for UI handling
+    }
   }, []);
 
   // ── Register ──
   const register = useCallback(async (userData) => {
-    // WIRE: AuthService.register → POST /auth/register
-    await AuthService.register(userData);
-    // After register, auto-populate identifier for login form
-    return userData.email;
+    try {
+      await AuthService.register(userData);
+      return userData.email;
+    } catch (err) {
+      console.error("Register failed:", err);
+      throw err;
+    }
   }, []);
 
   // ── Logout ──
   const logout = useCallback(() => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem("vsintellecta_token");
-    localStorage.removeItem("vsintellecta_active_user");
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(USER_KEY);
   }, []);
 
-  const isLoggedIn = !!user;
+  // ── Roles ──
+  const isLoggedIn = !!token;
   const isLearner = user?.role === "learner";
   const isTutor = user?.role === "tutor";
   const isAdmin = user?.role === "admin";
   const isSuperAdmin = user?.role === "superadmin";
 
-  // Dashboard route per role
-  const dashboardRoute = () => {
+  // ── Dashboard Route ──
+  const dashboardRoute = useCallback(() => {
     if (isSuperAdmin) return "/super-admin";
-    if (isAdmin) return "/user"; // AdminDashboard
-    if (isTutor) return "/dashboard";
+    if (isAdmin) return "/user";
     return "/dashboard";
-  };
+  }, [isSuperAdmin, isAdmin]);
 
-  return (
-    <AuthContext.Provider
-      value={{
-        user,
-        token,
-        loading,
-        isLoggedIn,
-        isLearner,
-        isTutor,
-        isAdmin,
-        isSuperAdmin,
-        login,
-        register,
-        logout,
-        dashboardRoute,
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
+  // ── Memoized value (prevents re-renders) ──
+  const value = useMemo(
+    () => ({
+      user,
+      token,
+      loading,
+      isLoggedIn,
+      isLearner,
+      isTutor,
+      isAdmin,
+      isSuperAdmin,
+      login,
+      register,
+      logout,
+      dashboardRoute,
+    }),
+    [
+      user,
+      token,
+      loading,
+      isLoggedIn,
+      isLearner,
+      isTutor,
+      isAdmin,
+      isSuperAdmin,
+      login,
+      register,
+      logout,
+      dashboardRoute,
+    ]
   );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export const useAuth = () => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-  return ctx;
-};
+// ── Hook ──
+// export const useAuth = () => {
+//   const ctx = useContext(AuthContext);
+//   if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+//   return ctx;
+// };

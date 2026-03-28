@@ -21,7 +21,7 @@ import toast from "react-hot-toast";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import { CourseService, CartService } from "./services/api";
-import { useAuth } from "./context/AuthContext";
+// import { useAuth } from "./context/AuthContext";
 
 const toastOK = {
   borderRadius: "12px",
@@ -83,7 +83,7 @@ const taxonomy = {
 
 export default function Explore() {
   const navigate = useNavigate();
-  const { isLoggedIn } = useAuth();
+  // const { isLoggedIn } = useAuth();
 
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -109,7 +109,7 @@ export default function Explore() {
       }
     };
     load();
-  }, [activeCategory]);
+  }, [activeCategory, searchQuery]);
 
   const filteredCourses = courses.filter((c) => {
     const matchesCat =
@@ -122,11 +122,11 @@ export default function Explore() {
 
   const handleAddToCart = async (course, e) => {
     e.stopPropagation();
-    if (!isLoggedIn) {
-      toast.error("Please log in to add to cart", { style: toastErr });
-      navigate("/login");
-      return;
-    }
+    // if (!isLoggedIn) {
+    //   toast.error("Please log in to add to cart", { style: toastErr });
+    //   navigate("/login");
+    //   return;
+    // }
     setAddingId(course.id);
     try {
       await CartService.addToCart(course);
