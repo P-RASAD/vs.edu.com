@@ -47,8 +47,8 @@ export default function Profile() {
 
   const handleLogout = () => {
     setUserData({})
-    localStorage.removeItem("vsintellecta_active_user");
-    navigate("/login");
+    localStorage.clear();
+    navigate("/");
   };
 
   const tabs = [

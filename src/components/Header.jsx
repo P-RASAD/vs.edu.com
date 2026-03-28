@@ -94,7 +94,7 @@ export default function Header() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   const handleLogout = () => {
-    localStorage.removeItem("user_details")
+    localStorage.clear();
     navigate("/");
   };
 

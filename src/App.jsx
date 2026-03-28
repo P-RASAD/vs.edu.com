@@ -2,7 +2,6 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
-// import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // ── Lazy pages ──
 const LandingPage = lazy(() => import("./LandingPage"));
@@ -23,21 +22,42 @@ const Loader = () => (
   </div>
 );
 
-// ── Protected route wrapper ──
-function ProtectedRoute({ children }) {
-  // const { user, loading } = useAuth();
-  // if (loading) return <Loader />;
-  // if (!user) return <Navigate to="/login" replace />;
-  // if (allowedRoles && !allowedRoles.includes(user.role))
-  //   return <Navigate to="/dashboard" replace />;
+// ── Helper: safely get user ──
+const getUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem("user_details") || "null");
+  } catch (e) {
+    console.log('e: ', e);
+    return null;
+  }
+};
+
+// ── Protected route ──
+function ProtectedRoute({ children, allowedRoles }) {
+  const user = getUser();
+
+  // ❌ Not logged in → go to home
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+
+  // ❌ Role not allowed
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return children;
 }
 
-// ── Public-only route (redirect logged-in users away from /login) ──
+// ── Public route ──
 function PublicRoute({ children }) {
-  // const { user, loading, dashboardRoute } = useAuth();
-  // if (loading) return <Loader />;
-  // if (user) return <Navigate to={dashboardRoute()} replace />;
+  const user = getUser();
+
+  // ✅ Already logged in → redirect
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
   return children;
 }
 
@@ -60,43 +80,47 @@ function AppRoutes() {
           }
         />
 
-        {/* Protected — all logged-in users */}
+        {/* Protected */}
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
               <Dashboard />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/course"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
               <CoursePlayer />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/course/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
               <CoursePlayer />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/checkout"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
               <Checkout />
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/profile"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute  allowedRoles={["tutor", "admin","super_admin"]}>
               <Profile />
             </ProtectedRoute>
           }
@@ -121,7 +145,6 @@ function AppRoutes() {
             </ProtectedRoute>
           }
         />
-
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
@@ -132,10 +155,8 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
-      {/* <AuthProvider> */}
-        <Toaster position="top-right" />
-        <AppRoutes />
-      {/* </AuthProvider> */}
+      <Toaster position="top-right" />
+      <AppRoutes />
     </BrowserRouter>
   );
 }

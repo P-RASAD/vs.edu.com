@@ -114,7 +114,7 @@ export default function SuperAdmin() {
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("user_details")
+    localStorage.clear();
     navigate("/");
   };
 

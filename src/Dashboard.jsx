@@ -130,10 +130,8 @@ export default function Dashboard() {
   // }, [navigate]);
 
   const handleLogout = () => {
-    localStorage.removeItem("vsintellecta_active_user");
-    localStorage.removeItem("vsintellecta_token");
     toast.success("Logged out successfully", { style: toastOK });
-    localStorage.removeItem("user_details")
+    localStorage.clear();
     navigate("/");
   };
 
