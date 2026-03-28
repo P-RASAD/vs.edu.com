@@ -1,288 +1,281 @@
-import React, { useState } from "react";
+// src/Explore.jsx
+import React, { useState, useEffect } from "react";
 import {
   Search,
   SlidersHorizontal,
   Star,
-  Clock,
-  BookOpen,
   Play,
-  Check,
   Filter,
-  Sparkles,
   ChevronRight,
+  ShoppingCart,
+  BookOpen,
+  Clock,
+  BarChart2,
+  Loader2,
+  Heart,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
+import { CourseService, CartService } from "./services/api";
+import { useAuth } from "./context/AuthContext";
+
+const toastOK = {
+  borderRadius: "12px",
+  background: "#0f172a",
+  color: "#fff",
+  fontSize: "13px",
+  fontWeight: 600,
+};
+const toastErr = {
+  borderRadius: "12px",
+  background: "#fff1f2",
+  color: "#e11d48",
+  fontSize: "13px",
+  fontWeight: 600,
+  border: "1px solid #fecdd3",
+};
+
+const taxonomy = {
+  "Primary Education": {
+    sub: ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5"],
+    subjects: ["Mathematics", "Language", "Basic Science", "Other"],
+  },
+  "Upper Primary": {
+    sub: ["Class 6", "Class 7", "Class 8"],
+    subjects: [
+      "Mathematics",
+      "Science",
+      "Social Studies",
+      "English",
+      "Computer Basics",
+      "Other",
+    ],
+  },
+  "Secondary Education": {
+    sub: ["Class 9", "Class 10"],
+    subjects: [
+      "Mathematics",
+      "Social Studies",
+      "Science",
+      "Computer Science",
+      "Languages",
+      "Other",
+    ],
+  },
+  Intermediate: {
+    sub: ["1st Year", "2nd Year"],
+    subjects: ["MPC", "BiPC", "Commerce", "Arts", "Other"],
+  },
+  "Competitive Exams": {
+    sub: ["GRE", "GMAT", "CAT", "UPSC"],
+    subjects: {
+      GRE: ["Verbal", "Quantitative", "Analytical Writing"],
+      GMAT: ["Quant", "Verbal", "Data Insights"],
+      CAT: ["VARC", "DILR", "QA"],
+      UPSC: ["GS", "CSAT", "Optionals", "State PSC"],
+    },
+  },
+};
 
 export default function Explore() {
   const navigate = useNavigate();
+  const { isLoggedIn } = useAuth();
 
-  // Master Taxonomy based on Handwritten Notes
-  const taxonomy = {
-    "Primary Education": {
-      sub: ["Class 1", "Class 2", "Class 3", "Class 4", "Class 5"],
-      subjects: ["Mathematics", "Language", "Basic Science", "Other"],
-    },
-    "Upper Primary": {
-      sub: ["Class 6", "Class 7", "Class 8"],
-      subjects: [
-        "Mathematics",
-        "Science",
-        "Social Studies",
-        "General Knowledge",
-        "English",
-        "Computer Basics",
-        "Other",
-      ],
-    },
-    "Secondary Education": {
-      sub: ["Class 9", "Class 10"],
-      subjects: [
-        "Mathematics",
-        "Social Studies",
-        "Science",
-        "Computer Science",
-        "Languages",
-        "Other",
-      ],
-    },
-    Intermediate: {
-      sub: ["1st Year", "2nd Year"],
-      subjects: ["MPC", "BiPC", "Commerce", "Arts", "Other"],
-    },
-    "Competitive Exams": {
-      sub: ["GRE", "GMAT", "CAT", "UPSC"],
-      subjects: {
-        GRE: [
-          "Verbal Reasoning",
-          "Quantitative Aptitude",
-          "Analytical Writing",
-        ],
-        GMAT: ["Quantitative Reasoning", "Verbal Reasoning", "Data Insights"],
-        CAT: ["VARC", "DILR", "QA"],
-        UPSC: [
-          "Options",
-          "General Studies",
-          "CSAT",
-          "SPSC (Group 1, 2, 3 & 4)",
-        ],
-      },
-    },
-  };
-
-  const [activeCategory, setActiveCategory] = useState("Competitive Exams");
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeCategory, setActiveCategory] = useState("All");
   const [activeSub, setActiveSub] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [addingId, setAddingId] = useState(null);
+  const [wishlist, setWishlist] = useState([]);
 
-  const allCourses = [
-    {
-      id: 1,
-      title: "GRE Quantitative Aptitude Masterclass",
-      category: "Competitive Exams",
-      sub: "GRE",
-      subject: "Quantitative Aptitude",
-      rating: "4.9",
-      lectures: "45",
-      price: "₹2,499",
-      img: "https://images.unsplash.com/photo-1554224155-8d04cb21cd6c?auto=format&fit=crop&w=600&q=80",
-      tag: "Bestseller",
-    },
-    {
-      id: 2,
-      title: "Class 10 Mathematics Complete Board Prep",
-      category: "Secondary Education",
-      sub: "Class 10",
-      subject: "Mathematics",
-      rating: "4.8",
-      lectures: "120",
-      price: "₹1,499",
-      img: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80",
-      tag: "CBSE/SSC",
-    },
-    {
-      id: 3,
-      title: "CAT VARC & DILR Intensive",
-      category: "Competitive Exams",
-      sub: "CAT",
-      subject: "VARC",
-      rating: "4.9",
-      lectures: "85",
-      price: "₹3,299",
-      img: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80",
-      tag: "Trending",
-    },
-    {
-      id: 4,
-      title: "Intermediate 1st Year MPC Foundation",
-      category: "Intermediate",
-      sub: "1st Year",
-      subject: "MPC",
-      rating: "4.7",
-      lectures: "90",
-      price: "₹1,999",
-      img: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80",
-      tag: "Hot",
-    },
-    {
-      id: 5,
-      title: "UPSC General Studies & CSAT",
-      category: "Competitive Exams",
-      sub: "UPSC",
-      subject: "General Studies",
-      rating: "4.9",
-      lectures: "200",
-      price: "₹4,999",
-      img: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=600&q=80",
-      tag: "Comprehensive",
-    },
-    {
-      id: 6,
-      title: "Upper Primary Computer Basics",
-      category: "Upper Primary",
-      sub: "Class 8",
-      subject: "Computer Basics",
-      rating: "4.6",
-      lectures: "30",
-      price: "₹999",
-      img: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80",
-      tag: "Beginner",
-    },
-  ];
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await CourseService.getAllCourses({
+          category: activeCategory,
+          q: searchQuery,
+        });
+        setCourses(res.data);
+      } catch {
+        toast.error("Failed to load courses", { style: toastErr });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [activeCategory]);
 
-  const filteredCourses = allCourses.filter((course) => {
+  const filteredCourses = courses.filter((c) => {
     const matchesCat =
-      activeCategory === "All" || course.category === activeCategory;
-    const matchesSub = activeSub === "All" || course.sub === activeSub;
-    const matchesSearch = course.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    return matchesCat && matchesSub && matchesSearch;
+      activeCategory === "All" || c.category === activeCategory;
+    const matchesSub = activeSub === "All" || c.sub === activeSub;
+    const matchesQ =
+      !searchQuery || c.title.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCat && matchesSub && matchesQ;
   });
 
-  // Get dynamic subjects based on selection
-  const getDynamicSubjects = () => {
-    if (activeCategory === "All") return [];
-    if (activeCategory === "Competitive Exams" && activeSub !== "All") {
-      return taxonomy[activeCategory].subjects[activeSub] || [];
+  const handleAddToCart = async (course, e) => {
+    e.stopPropagation();
+    if (!isLoggedIn) {
+      toast.error("Please log in to add to cart", { style: toastErr });
+      navigate("/login");
+      return;
     }
-    return Array.isArray(taxonomy[activeCategory].subjects)
-      ? taxonomy[activeCategory].subjects
-      : [];
+    setAddingId(course.id);
+    try {
+      await CartService.addToCart(course);
+      toast.success(`"${course.title}" added to cart 🛒`, { style: toastOK });
+    } catch {
+      toast.error("Could not add to cart", { style: toastErr });
+    } finally {
+      setAddingId(null);
+    }
+  };
+
+  const toggleWishlist = (id) =>
+    setWishlist((p) =>
+      p.includes(id) ? p.filter((x) => x !== id) : [...p, id],
+    );
+
+  const getDynamicSubjects = () => {
+    if (activeCategory === "All" || !taxonomy[activeCategory]) return [];
+    const s = taxonomy[activeCategory].subjects;
+    if (activeCategory === "Competitive Exams" && activeSub !== "All")
+      return s[activeSub] || [];
+    return Array.isArray(s) ? s : [];
+  };
+
+  const tagColors = {
+    Bestseller: "bg-amber-100 text-amber-700",
+    Trending: "bg-rose-100 text-rose-700",
+    Popular: "bg-purple-100 text-purple-700",
+    "CBSE/SSC": "bg-blue-100 text-blue-700",
+    Comprehensive: "bg-emerald-100 text-emerald-700",
+    Hot: "bg-orange-100 text-orange-700",
   };
 
   return (
     <div className="min-h-screen bg-[#FBFBFD] text-slate-900 font-sans selection:bg-blue-200 flex flex-col">
       <Header />
 
-      {/* 1. HERO SEARCH */}
-      <section className="relative pt-20 pb-16 overflow-hidden bg-slate-900 border-b border-slate-800">
-        <div className="absolute top-[-50%] left-[-10%] w-[600px] h-[600px] bg-blue-600/30 rounded-full blur-[120px] pointer-events-none"></div>
-        <div className="max-w-7xl mx-auto px-6 relative z-10 flex flex-col items-center text-center">
+      {/* ── Hero search ── */}
+      <section className="relative pt-24 pb-14 overflow-hidden bg-slate-900 border-b border-slate-800">
+        <div className="absolute top-[-50%] left-[-10%] w-[600px] h-[600px] bg-blue-600/25 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-0 right-[10%] w-[400px] h-[300px] bg-cyan-600/15 rounded-full blur-[100px] pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-6 relative z-10 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h1 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tight">
+            <span className="inline-flex items-center gap-2 bg-white/8 border border-white/15 text-slate-300 text-xs font-bold px-4 py-1.5 rounded-full mb-5 backdrop-blur-md">
+              <Zap className="w-3.5 h-3.5 text-cyan-400" /> {courses.length}+
+              courses available
+            </span>
+            <h1 className="text-4xl md:text-6xl font-black text-white mb-4 tracking-tight">
               Explore the{" "}
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                 Curriculum
               </span>
             </h1>
+            <p className="text-slate-400 font-medium text-lg mb-8 max-w-xl mx-auto">
+              From Class 1 to UPSC — India's most structured learning catalogue.
+            </p>
           </motion.div>
 
-          <div className="w-full max-w-3xl relative group mt-6">
-            <Search className="absolute left-6 top-5 h-6 w-6 text-slate-400" />
+          <div className="w-full max-w-3xl mx-auto relative group">
+            <Search className="absolute left-6 top-5 h-5 w-5 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-16 pr-6 py-5 bg-white/10 backdrop-blur-xl border border-white/20 rounded-full text-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/30 font-bold shadow-2xl"
-              placeholder="Search for subjects, exams, or classes..."
+              className="block w-full pl-16 pr-6 py-4.5 bg-white/8 backdrop-blur-xl border border-white/20 rounded-2xl text-white placeholder-slate-500 focus:outline-none focus:ring-4 focus:ring-blue-500/25 font-bold text-base shadow-2xl"
+              style={{ paddingTop: "1.1rem", paddingBottom: "1.1rem" }}
+              placeholder="Search subjects, exams, or classes..."
             />
           </div>
         </div>
       </section>
 
-      {/* 2. TOP LEVEL CATEGORIES */}
-      <div className="border-b border-slate-200 bg-white sticky top-[72px] z-40 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex gap-3 overflow-x-auto hide-scrollbar">
-          <button
-            onClick={() => {
-              setActiveCategory("All");
-              setActiveSub("All");
-            }}
-            className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all border ${activeCategory === "All" ? "bg-slate-900 border-slate-900 text-white shadow-md" : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"}`}
-          >
-            All
-          </button>
-          {Object.keys(taxonomy).map((category) => (
+      {/* ── Category tabs ── */}
+      <div className="border-b border-slate-200 bg-white sticky top-[68px] z-40 shadow-sm">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex gap-2 overflow-x-auto hide-scrollbar">
+          {["All", ...Object.keys(taxonomy)].map((cat) => (
             <button
-              key={category}
+              key={cat}
               onClick={() => {
-                setActiveCategory(category);
+                setActiveCategory(cat);
                 setActiveSub("All");
               }}
-              className={`whitespace-nowrap px-6 py-2.5 rounded-full text-sm font-bold transition-all border ${activeCategory === category ? "bg-blue-600 border-blue-600 text-white shadow-md" : "bg-white border-slate-200 text-slate-600 hover:border-slate-400 hover:bg-slate-50"}`}
+              className={`whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold transition-all border ${
+                activeCategory === cat
+                  ? cat === "All"
+                    ? "bg-slate-900 border-slate-900 text-white shadow-md"
+                    : "bg-blue-600 border-blue-600 text-white shadow-md"
+                  : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300"
+              }`}
             >
-              {category}
+              {cat}
             </button>
           ))}
         </div>
       </div>
 
-      {/* 3. MAIN CATALOG ARENA */}
-      <section className="flex-1 max-w-7xl mx-auto px-6 py-12 flex flex-col lg:flex-row gap-10 w-full relative">
-        {/* SMART FILTER SIDEBAR */}
-        <aside className="w-full lg:w-72 shrink-0">
-          <div className="bg-white rounded-[2rem] border border-slate-200 p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sticky top-[160px]">
-            <div className="flex items-center gap-2 mb-6 pb-4 border-b border-slate-100">
-              <Filter className="w-5 h-5 text-slate-900" />
-              <h2 className="text-xl font-black text-slate-900">Filters</h2>
+      {/* ── Main layout ── */}
+      <section className="flex-1 max-w-7xl mx-auto px-6 py-10 flex flex-col lg:flex-row gap-8 w-full">
+        {/* Sidebar */}
+        <aside className="w-full lg:w-64 shrink-0">
+          <div className="bg-white rounded-[1.75rem] border border-slate-200 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] sticky top-[140px]">
+            <div className="flex items-center gap-2 mb-5 pb-4 border-b border-slate-100">
+              <Filter className="w-4 h-4 text-slate-900" />
+              <h2 className="text-base font-black text-slate-900">Filters</h2>
             </div>
 
-            {activeCategory !== "All" && (
+            {activeCategory !== "All" && taxonomy[activeCategory] && (
               <>
-                {/* SUB-CATEGORY (Classes / Exams) */}
-                <div className="mb-8">
-                  <h3 className="text-sm font-extrabold text-blue-600 uppercase tracking-widest mb-4">
-                    Select Level / Exam
+                <div className="mb-6">
+                  <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-3">
+                    Level / Exam
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-1.5">
                     <button
                       onClick={() => setActiveSub("All")}
                       className={`w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors ${activeSub === "All" ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-100"}`}
                     >
                       All {activeCategory}
                     </button>
-                    {taxonomy[activeCategory].sub.map((subItem) => (
+                    {taxonomy[activeCategory].sub.map((s) => (
                       <button
-                        key={subItem}
-                        onClick={() => setActiveSub(subItem)}
-                        className={`w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors ${activeSub === subItem ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100"}`}
+                        key={s}
+                        onClick={() => setActiveSub(s)}
+                        className={`w-full text-left px-3 py-2 rounded-xl text-sm font-bold transition-colors ${activeSub === s ? "bg-blue-600 text-white shadow-md" : "text-slate-600 hover:bg-slate-100"}`}
                       >
-                        {subItem}
+                        {s}
                       </button>
                     ))}
                   </div>
                 </div>
 
-                {/* DYNAMIC SUBJECTS */}
                 {getDynamicSubjects().length > 0 && (
                   <div>
-                    <h3 className="text-sm font-extrabold text-slate-900 uppercase tracking-widest mb-4">
+                    <h3 className="text-[10px] font-black text-slate-900 uppercase tracking-widest mb-3">
                       Subjects
                     </h3>
-                    <div className="space-y-3">
-                      {getDynamicSubjects().map((subject) => (
+                    <div className="space-y-2.5">
+                      {getDynamicSubjects().map((sub) => (
                         <label
-                          key={subject}
-                          className="flex items-center gap-3 cursor-pointer group"
+                          key={sub}
+                          className="flex items-center gap-2.5 cursor-pointer group"
                         >
-                          <div className="w-5 h-5 rounded-md border border-slate-300 flex items-center justify-center group-hover:border-blue-400 transition-colors"></div>
+                          <div className="w-4 h-4 rounded border border-slate-300 flex items-center justify-center group-hover:border-blue-400 transition-colors" />
                           <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900">
-                            {subject}
+                            {sub}
                           </span>
                         </label>
                       ))}
@@ -294,67 +287,189 @@ export default function Explore() {
           </div>
         </aside>
 
-        {/* GRID */}
+        {/* Grid */}
         <main className="flex-1">
-          <div className="flex justify-between items-end mb-8">
+          <div className="flex justify-between items-end mb-6">
             <div>
-              <h2 className="text-2xl font-black text-slate-900">
-                {activeSub !== "All" ? activeSub : activeCategory} Courses
+              <h2 className="text-xl font-black text-slate-900">
+                {activeSub !== "All"
+                  ? activeSub
+                  : activeCategory === "All"
+                    ? "All"
+                    : activeCategory}{" "}
+                Courses
               </h2>
-              <p className="text-slate-500 font-medium mt-1">
-                Showing {filteredCourses.length} results
+              <p className="text-slate-500 font-medium text-sm mt-0.5">
+                {loading
+                  ? "Loading..."
+                  : `${filteredCourses.length} result${filteredCourses.length !== 1 ? "s" : ""}`}
               </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-slate-400" />
+              <select className="text-sm font-bold text-slate-600 bg-white border border-slate-200 rounded-xl px-3 py-1.5 focus:outline-none focus:border-blue-400">
+                <option>Most Relevant</option>
+                <option>Highest Rated</option>
+                <option>Newest</option>
+                <option>Price: Low to High</option>
+              </select>
             </div>
           </div>
 
-          <motion.div
-            layout
-            className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"
-          >
-            <AnimatePresence>
-              {filteredCourses.map((course) => (
-                <motion.div
-                  layout
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.3 }}
-                  key={course.id}
-                  onClick={() => navigate("/course-detail")}
-                  className="bg-white rounded-[2rem] p-3 shadow-md border border-slate-200 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300 cursor-pointer group flex flex-col"
-                >
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              {Array(6)
+                .fill(0)
+                .map((_, i) => (
                   <div
-                    className="w-full h-44 rounded-3xl relative overflow-hidden mb-4 shadow-inner flex flex-col justify-end p-4 bg-cover bg-center"
-                    style={{ backgroundImage: `url(${course.img})` }}
+                    key={i}
+                    className="bg-white rounded-[1.75rem] overflow-hidden border border-slate-200 animate-pulse"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                    <div className="relative z-10 flex justify-between items-end">
-                      <span className="bg-blue-600 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider px-3 py-1.5 rounded-full shadow-sm">
-                        {course.tag}
-                      </span>
+                    <div className="h-44 bg-slate-200" />
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 bg-slate-200 rounded" />
+                      <div className="h-3 bg-slate-200 rounded w-2/3" />
                     </div>
                   </div>
-                  <div className="px-3 flex flex-col flex-1 pb-2">
-                    <span className="text-xs font-black text-blue-600 uppercase tracking-widest mb-1">
-                      {course.subject}
-                    </span>
-                    <h4 className="font-extrabold text-slate-900 text-lg leading-snug mb-3 group-hover:text-blue-600 line-clamp-2">
-                      {course.title}
-                    </h4>
-                    <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-4">
-                      <span className="flex items-center text-slate-700 text-sm font-black">
-                        <Star className="w-4 h-4 text-amber-500 fill-current mr-1" />{" "}
-                        {course.rating}
-                      </span>
-                      <span className="text-lg font-black text-slate-900">
-                        {course.price}
-                      </span>
+                ))}
+            </div>
+          ) : (
+            <motion.div
+              layout
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5"
+            >
+              <AnimatePresence>
+                {filteredCourses.map((course) => (
+                  <motion.div
+                    layout
+                    key={course.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ duration: 0.3 }}
+                    onClick={() => navigate("/course-detail")}
+                    className="bg-white rounded-[1.75rem] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 cursor-pointer group flex flex-col overflow-hidden"
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative h-44 overflow-hidden bg-slate-200">
+                      {course.img ? (
+                        <img
+                          src={course.img}
+                          alt={course.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center">
+                          <BookOpen className="w-10 h-10 text-white" />
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+
+                      {/* Top badges */}
+                      <div className="absolute top-3 left-3 flex items-center gap-2">
+                        {course.tag && (
+                          <span
+                            className={`text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${tagColors[course.tag] || "bg-blue-100 text-blue-700"}`}
+                          >
+                            {course.tag}
+                          </span>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist(course.id);
+                        }}
+                        className="absolute top-3 right-3 w-8 h-8 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30 hover:bg-white/40 transition-all"
+                      >
+                        <Heart
+                          className={`w-4 h-4 ${wishlist.includes(course.id) ? "text-rose-500 fill-rose-500" : "text-white"}`}
+                        />
+                      </button>
+
+                      {/* Play hover */}
+                      <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="w-12 h-12 bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center border border-white/40">
+                          <Play className="w-5 h-5 text-white ml-0.5" />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+
+                    {/* Body */}
+                    <div className="p-5 flex flex-col flex-1">
+                      {course.category && (
+                        <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest mb-1.5">
+                          {course.category}
+                        </span>
+                      )}
+                      <h4 className="font-extrabold text-slate-900 text-base leading-snug mb-3 group-hover:text-blue-600 transition-colors line-clamp-2">
+                        {course.title}
+                      </h4>
+
+                      {course.author && (
+                        <p className="text-xs font-medium text-slate-500 mb-3">
+                          {course.author}
+                        </p>
+                      )}
+
+                      <div className="flex items-center gap-3 text-xs font-bold text-slate-500 mb-3">
+                        {course.rating && (
+                          <span className="flex items-center gap-1 text-amber-600">
+                            <Star className="w-3.5 h-3.5 fill-current" />{" "}
+                            {course.rating}
+                          </span>
+                        )}
+                        {course.level && (
+                          <span className="flex items-center gap-1">
+                            <BarChart2 className="w-3.5 h-3.5" /> {course.level}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="mt-auto flex items-center justify-between pt-3.5 border-t border-slate-100">
+                        <span className="text-xl font-black text-slate-900">
+                          {course.price}
+                        </span>
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={(e) => handleAddToCart(course, e)}
+                          disabled={addingId === course.id}
+                          className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-wider px-3.5 py-2 rounded-xl text-white transition-all disabled:opacity-60"
+                          style={{
+                            background:
+                              "linear-gradient(135deg,#2563eb,#0891b2)",
+                            boxShadow: "0 3px 12px rgba(37,99,235,0.28)",
+                          }}
+                        >
+                          {addingId === course.id ? (
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          ) : (
+                            <>
+                              <ShoppingCart className="w-3.5 h-3.5" /> Add to
+                              Cart
+                            </>
+                          )}
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+
+              {filteredCourses.length === 0 && !loading && (
+                <div className="col-span-full flex flex-col items-center py-20 text-center">
+                  <BookOpen className="w-14 h-14 text-slate-300 mb-4" />
+                  <h3 className="text-xl font-bold text-slate-600">
+                    No courses found
+                  </h3>
+                  <p className="text-slate-400 font-medium mt-1 text-sm">
+                    Try a different search term or category.
+                  </p>
+                </div>
+              )}
+            </motion.div>
+          )}
         </main>
       </section>
       <Footer />
