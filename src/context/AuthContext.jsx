@@ -82,7 +82,7 @@ export function AuthProvider({ children }) {
   const isLearner = user?.role === "learner";
   const isTutor = user?.role === "tutor";
   const isAdmin = user?.role === "admin";
-  const isSuperAdmin = user?.role === "superadmin";
+  const isSuperAdmin = user?.role === "super_admin";
 
   // ── Dashboard Route ──
   const dashboardRoute = useCallback(() => {

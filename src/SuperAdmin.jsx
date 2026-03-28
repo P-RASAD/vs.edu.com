@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import {
   Layers, Users, DollarSign, BookOpen, Shield, Search, Bell, Activity,
   ArrowUpRight, ArrowDownRight, CheckCircle, XCircle, TrendingUp, PlayCircle,
-  AlertTriangle, ArrowLeft, Ban, CheckSquare, LogOut, RefreshCw, Loader2,
+  AlertTriangle, ArrowLeft, Ban, CheckSquare, RefreshCw, Loader2,
   FileText, Download, Eye, Clock, BarChart3,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -18,12 +18,11 @@ const toastErr = { borderRadius: "12px", background: "#fff1f2", color: "#e11d48"
 const pageV = { initial: { opacity: 0, y: 12 }, in: { opacity: 1, y: 0 }, out: { opacity: 0, y: -12 } };
 
 export default function SuperAdmin() {
+  const userData = JSON.parse(localStorage.getItem("user_details"));
   const navigate        = useNavigate();
-  // const { logout }      = useAuth();
   const [activeTab,     setActiveTab]     = useState("overview");
   const [reviewingCourse, setReviewingCourse] = useState(null);
   const [activeVideo,   setActiveVideo]   = useState("");
-
   // API state
   const [stats,         setStats]         = useState(null);
   const [users,         setUsers]         = useState([]);
@@ -34,7 +33,6 @@ export default function SuperAdmin() {
   const [loadingPending,setLoadingPending]= useState(false);
   const [actioning,     setActioning]     = useState(null);
   const [checklist,     setChecklist]     = useState({ copyright: false, content: false, quality: false });
-
   // Load stats on mount
   useEffect(() => {
     const load = async () => {
@@ -101,8 +99,6 @@ export default function SuperAdmin() {
     finally { setActioning(null); }
   };
 
-  // const handleLogout = () => { logout(); navigate("/"); };
-
   const statCards = stats ? [
     { title: "Total Revenue",     value: stats.totalPlatformRevenue, trend: "+14.2%", isUp: true,  icon: <DollarSign className="w-6 h-6 text-purple-600" />, bg: "bg-purple-100" },
     { title: "Active Students",   value: stats.totalActiveUsers,     trend: "+5.4%",  isUp: true,  icon: <Users      className="w-6 h-6 text-blue-600" />,   bg: "bg-blue-100"   },
@@ -116,6 +112,11 @@ export default function SuperAdmin() {
     { id: "moderation",  label: "Course Moderation", icon: <Shield    className="w-5 h-5" />, badge: pending.length },
     { id: "finance",     label: "Financial Reports", icon: <DollarSign className="w-5 h-5" /> },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem("user_details")
+    navigate("/");
+  };
 
   return (
     <div className="flex h-screen bg-[#F4F7FE] text-slate-800 font-sans overflow-hidden selection:bg-purple-200">
@@ -153,14 +154,14 @@ export default function SuperAdmin() {
           <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 border border-purple-200 flex items-center justify-center text-purple-700 font-black text-sm shadow-sm">SA</div>
             <div>
-              <p className="text-sm font-bold text-slate-900">Super Admin</p>
-              <p className="text-xs text-slate-500 font-medium">System Owner</p>
+              <p className="text-sm font-bold text-slate-900">{userData?.role }</p>
+              <p className="text-xs text-slate-500 font-medium">{userData?.first_name} { userData?.last_name}</p>
             </div>
           </div>
           <button
-            // onClick={handleLogout}
+            onClick={handleLogout}
             className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors">
-            <LogOut className="w-4 h-4" /> Sign Out
+            Log Out
           </button>
         </div>
       </aside>
@@ -185,6 +186,12 @@ export default function SuperAdmin() {
             <button className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-purple-600 hover:shadow-md transition-all relative">
               <Bell className="w-5 h-5" />
               <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
+            </button>
+            <button
+              onClick={handleLogout}
+              className="text-sm font-bold text-red-600 hover:text-red-700 px-4 py-2 transition-colors hidden sm:block"
+            >
+              Log out
             </button>
           </div>
         </header>

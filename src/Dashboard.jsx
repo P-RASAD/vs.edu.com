@@ -1,15 +1,6 @@
 // src/Dashboard.jsx  — PART 1 of 2
 // Paste this entire file; Part 2 continues immediately after this file's last line.
-// ─────────────────────────────────────────────────────────────────────────────
-// WIRING MAP
-//   ExploreView        → CourseService.getAllCourses()  (GET)
-//   ExploreView enroll → CourseService.enroll(id)       (POST)
-//   MyProgramsView     → CourseService.getMyPrograms()  (GET)
-//   CreateCourseModal  → TutorService.createCourse()    (POST)
-//   AdminOverview      → AdminService.getPlatformStats() + moderateCourse()
-//   TutorFinancialView → TutorService.getAnalytics()
-// ─────────────────────────────────────────────────────────────────────────────
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import toast, { Toaster } from "react-hot-toast";
 import {
   LayoutDashboard,
@@ -118,6 +109,7 @@ const toastErr = {
 // MASTER LAYOUT
 // ============================================================================
 export default function Dashboard() {
+  const userData = JSON.parse(localStorage.getItem("user_details"));
   const navigate = useNavigate();
   const [currentView, setCurrentView] = useState("dashboard");
   const [isCourseModalOpen, setIsCourseModalOpen] = useState(false);
@@ -134,14 +126,15 @@ export default function Dashboard() {
   //   const u = localStorage.getItem("vsintellecta_active_user");
   //   if (!u) { navigate("/login"); return; }
   //   const user = JSON.parse(u);
-  //   if (user.role === "superadmin" || user.role === "admin") setCurrentView("admin-hub");
+  //   if (user.role === "super_admin" || user.role === "admin") setCurrentView("admin-hub");
   // }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem("vsintellecta_active_user");
     localStorage.removeItem("vsintellecta_token");
     toast.success("Logged out successfully", { style: toastOK });
-    setTimeout(() => navigate("/login"), 600);
+    localStorage.removeItem("user_details")
+    navigate("/");
   };
 
   // Module/video CRUD (curriculum builder state)
@@ -183,10 +176,9 @@ export default function Dashboard() {
     });
 
   // Demo values — replace with localStorage parsed user
-  const fName = "Avinash";
-  const role = "learner"; // "learner" | "tutor" | "admin" | "superadmin"
+  const role = userData?.role
   const isTutor = role === "tutor";
-  const isAdminOrSuper = role === "admin" || role === "superadmin";
+  const isAdminOrSuper = role === "admin" || role === "super_admin";
 
   return (
     <div
@@ -218,8 +210,8 @@ export default function Dashboard() {
       </div>
 
       <Sidebar
-        fName={fName}
-        role={role}
+        fName={userData?.first_name}
+        role={userData?.role}
         isTutor={isTutor}
         isAdminOrSuper={isAdminOrSuper}
         currentView={currentView}
@@ -241,7 +233,7 @@ export default function Dashboard() {
           <div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight flex items-center gap-2">
               {currentView === "dashboard"
-                ? `Good morning, ${fName}`
+                ? `Good morning, ${userData?.first_name}`
                 : currentView === "explore"
                   ? "Course Catalog"
                   : currentView === "my-programs"
@@ -265,7 +257,6 @@ export default function Dashboard() {
               </p>
             )}
           </div>
-
           <div className="flex items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -283,7 +274,7 @@ export default function Dashboard() {
                 style={{ background: C.accent }}
               />
             </motion.button>
-
+            
             {isTutor && (
               <motion.button
                 onClick={() => setIsCourseModalOpen(true)}
@@ -298,6 +289,12 @@ export default function Dashboard() {
                 <UploadCloud className="w-4 h-4" /> Add Course
               </motion.button>
             )}
+            <button
+              onClick={handleLogout}
+              className="text-sm font-bold text-red-600 hover:text-red-700 px-4 py-2 transition-colors hidden sm:block"
+            >
+              Log out
+            </button>
           </div>
         </header>
 
@@ -531,7 +528,7 @@ function NavGroup({ label, items, currentView, setCurrentView, accent }) {
   );
 }
 
-function SidebarItem({ id, icon: Icon, label, currentView, setCurrentView }) {
+function SidebarItem({ id, label, currentView, setCurrentView }) {
   const isActive = currentView === id;
   return (
     <motion.button
@@ -555,7 +552,7 @@ function SidebarItem({ id, icon: Icon, label, currentView, setCurrentView }) {
         className="relative z-10"
         style={{ color: isActive ? "white" : "#94A3B8" }}
       >
-        <Icon className="w-4 h-4" />
+        {/* <Icon className="w-4 h-4" /> */}
       </span>
       <span className="relative z-10 font-semibold">{label}</span>
       {isActive && (
@@ -1160,6 +1157,7 @@ const ExploreView = () => {
         });
         setCourses(res.data);
       } catch (err) {
+        console.log('err: ', err);
         toast.error("Failed to load courses", { style: toastErr });
       } finally {
         setLoading(false);
@@ -1507,6 +1505,7 @@ const MyProgramsView = () => {
         const res = await CourseService.getMyPrograms();
         setPrograms(res.data);
       } catch (err) {
+        console.log('err: ', err);
         toast.error("Could not load your programs", { style: toastErr });
       } finally {
         setLoading(false);
@@ -1560,7 +1559,7 @@ const MyProgramsView = () => {
         className="flex gap-1.5 p-1 rounded-2xl w-max"
         style={{ background: "white", border: "1px solid rgba(0,87,255,0.08)" }}
       >
-        {["All", "In Progress", "Completed"].map((t, i) => (
+        {["All", "In Progress", "Completed"].map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -1690,6 +1689,7 @@ const TutorFinancialView = () => {
         const res = await TutorService.getAnalytics();
         setStats(res.data);
       } catch (err) {
+        console.log('err: ', err);
         toast.error("Could not load analytics", { style: toastErr });
       } finally {
         setLoading(false);
@@ -1917,6 +1917,7 @@ const AdminOverview = () => {
         const res = await AdminService.getPlatformStats();
         setStats(res.data);
       } catch (err) {
+        console.log('err: ', err);
         toast.error("Could not load platform stats", { style: toastErr });
       } finally {
         setLoading(false);
@@ -1943,6 +1944,7 @@ const AdminOverview = () => {
         },
       );
     } catch (err) {
+      console.log('err: ', err);
       toast.error("Action failed — try again", { style: toastErr });
     } finally {
       setActioning(null);
@@ -2185,9 +2187,7 @@ const AdminOverview = () => {
 // ACCOUNT SETTINGS VIEW
 // ============================================================================
 const AccountSettingsView = () => {
-  const user = JSON.parse(
-    localStorage.getItem("vsintellecta_active_user") || "{}",
-  );
+  const userData = JSON.parse(localStorage.getItem("user_details"));
   return (
     <motion.div
       initial={{ opacity: 0, y: 14 }}
@@ -2213,11 +2213,11 @@ const AccountSettingsView = () => {
               background: `linear-gradient(135deg,${C.primary},${C.secondary})`,
             }}
           >
-            {user?.firstName?.charAt(0) || "A"}
+            {userData?.first_name?.charAt(0) || "A"}
           </div>
           <div>
             <h3 className="text-xl font-black mb-1.5" style={{ color: C.dark }}>
-              {user?.firstName || "Avinash"} {user?.lastName || ""}
+              {userData?.first_name || "Avinash"} {userData?.last_name || ""}
             </h3>
             <span
               className="text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 w-max"
@@ -2227,7 +2227,7 @@ const AccountSettingsView = () => {
                 border: "1px solid rgba(0,87,255,0.12)",
               }}
             >
-              <Shield className="w-3 h-3" /> Verified {user?.role || "learner"}
+              <Shield className="w-3 h-3" /> Verified {userData?.role || "learner"}
             </span>
           </div>
         </div>
@@ -2236,14 +2236,14 @@ const AccountSettingsView = () => {
             {
               label: "Email Address",
               Icon: User,
-              placeholder: user?.email || "user@example.com",
+              placeholder: userData?.email || "user@example.com",
               type: "email",
               disabled: true,
             },
             {
               label: "Mobile Number",
               Icon: Phone,
-              placeholder: "+91 9876543210",
+              placeholder: userData?.mobile || "+91 9876543210",
               type: "tel",
               disabled: false,
             },

@@ -64,9 +64,9 @@ function AppRoutes() {
         <Route
           path="/dashboard"
           element={
-            // <ProtectedRoute>
+            <ProtectedRoute>
               <Dashboard />
-            // </ProtectedRoute>
+            </ProtectedRoute>
           }
         />
         <Route
@@ -116,7 +116,7 @@ function AppRoutes() {
         <Route
           path="/super-admin"
           element={
-            <ProtectedRoute allowedRoles={["superadmin", "admin"]}>
+            <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
               <SuperAdmin />
             </ProtectedRoute>
           }

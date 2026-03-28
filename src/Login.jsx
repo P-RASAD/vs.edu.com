@@ -15,155 +15,43 @@ import { useNavigate } from "react-router-dom";
 
 export default function Login() {
   const navigate = useNavigate();
-  const [isLogin, setIsLogin] = useState(false);
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const [formData, setFormData] = useState({
-    identifier: "",
-    username: "",
-    firstName: "",
-    lastName: "",
     email: "",
-    mobile: "",
-    role: "learner",
     password: "",
-    confirmPassword: "",
   });
-
-  // ==========================================
-  // DUMMY API ENGINE (Local Storage JSON)
-  // ==========================================
-  // When your friend provides the real APIs, you can delete this function
-  // and replace it with a real fetch() or axios.post() call inside handleSubmit.
-  const mockApiCall = async (endpoint, data) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        // Get our dummy database from local storage (or create an empty array)
-        const usersDb = JSON.parse(localStorage.getItem("mock_users_db")) || [];
-
-        if (endpoint === "/api/register") {
-          // 1. Check if user already exists
-          if (
-            usersDb.find(
-              (u) => u.email === data.email || u.username === data.username,
-            )
-          ) {
-            return reject(
-              new Error("User with this email or username already exists."),
-            );
-          }
-
-          // 2. Create new user record
-          const newUser = {
-            id: `usr_${Date.now()}`,
-            first_name: data.firstName,
-            last_name: data.lastName,
-            username: data.username,
-            email: data.email,
-            mobile: data.mobile,
-            role: data.role,
-            password: data.password, // Storing plaintext only for local mock purposes
-          };
-
-          // 3. Save to dummy DB
-          usersDb.push(newUser);
-          localStorage.setItem("mock_users_db", JSON.stringify(usersDb));
-
-          resolve({ data: { message: "Account created", user: newUser } });
-        }
-
-        if (endpoint === "/api/login") {
-          // 1. Find the user by email or username
-          const user = usersDb.find(
-            (u) =>
-              (u.email === data.identifier || u.username === data.identifier) &&
-              u.password === data.password,
-          );
-
-          if (!user) {
-            return reject(
-              new Error("Invalid credentials. Please check your details."),
-            );
-          }
-
-          // 2. Return user data (without password) and a dummy token
-          // const { password, ...userWithoutPassword } = user;
-          resolve({
-            data: {
-              message: "Login successful",
-              // user: userWithoutPassword,
-              token: "dummy_jwt_token_12345",
-            },
-          });
-        }
-      }, 1000); // Simulate a 1-second network delay
-    });
-  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
     setIsLoading(true);
-
     try {
-      if (isLogin) {
-        // ==========================================
-        // LOGIN FLOW
-        // To integrate real API later, replace mockApiCall with:
-        // const res = await axios.post('https://api.yourdomain.com/login', { identifier: formData.identifier, password: formData.password })
-        // ==========================================
-        const res = await mockApiCall("/api/login", {
-          identifier: formData.identifier,
-          password: formData.password,
-        });
+        // 🔹 Fetch users.json from public folder
+        const res = await fetch("/users.json");
+        const data = await res.json();
+        // 🔹 Find matching user
+        const matchedUser = data.users.find(
+          (user) =>
+            user.email === formData.email &&
+            user.password === formData.password
+      );
+      
+      localStorage.setItem("user_details", JSON.stringify(matchedUser));
 
-        const profileData = res.data.user;
-
-        // Save session data locally
-        // localStorage.setItem(
-        //   "vsintellecta_active_user",
-        //   JSON.stringify(profileData),
-        // );
-        // localStorage.setItem("vsintellecta_token", res.data.token);
-
-        // Route based on role
-        if (profileData.role === "tutor") {
+        // 🔹 Role-based routing
+        if (matchedUser.role === "tutor") {
           navigate("/admin");
-        } else if (profileData.role === "superadmin") {
+        } else if (matchedUser.role === "super_admin") {
           navigate("/super-admin");
         } else {
           navigate("/dashboard");
         }
-      } else {
-        // ==========================================
-        // REGISTRATION FLOW
-        // ==========================================
-        if (formData.password !== formData.confirmPassword) {
-          setError("Passwords do not match.");
-          setIsLoading(false);
-          return;
-        }
-
-        // To integrate real API later, replace mockApiCall with:
-        // const res = await axios.post('https://api.yourdomain.com/register', formData)
-        // const res = await mockApiCall("/api/register", formData);
-
-        setSuccessMsg("Account created successfully! Please sign in.");
-
-        // Reset specific form fields and switch to login view
-        setFormData({
-          ...formData,
-          identifier: formData.email, // Auto-fill the identifier with the email they just used
-          password: "",
-          confirmPassword: "",
-        });
-        setIsLogin(true);
-      }
     } catch (err) {
-      setError(err.message || "An error occurred connecting to the server.");
+      setError(err.message || "An error occurred.");
     } finally {
       setIsLoading(false);
     }
@@ -175,13 +63,13 @@ export default function Login() {
     setSuccessMsg(""); // Clear success message on typing
   };
 
-  const handleGoogleLogin = () => {
-    setIsLoading(true);
-    setTimeout(() => {
-      setIsLoading(false);
-      navigate("/dashboard");
-    }, 1500);
-  };
+  // const handleGoogleLogin = () => {
+  //   setIsLoading(true);
+  //   setTimeout(() => {
+  //     setIsLoading(false);
+  //     navigate("/dashboard");
+  //   }, 1500);
+  // };
 
   // YOUR EXACT UI CODE BELOW - UNTOUCHED
   return (
@@ -240,33 +128,31 @@ export default function Login() {
           <div className="flex-1 overflow-y-auto px-8 py-8 md:px-12 hide-scrollbar">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <h3 className="text-2xl font-black text-slate-900 tracking-tight">
-                {isLogin ? "Sign In" : "Create Account"}
+                Sign In
               </h3>
 
               {/* FIXED: White Text on Blue Background for Active Toggles */}
               <div className="flex bg-slate-100 p-1 rounded-xl shadow-inner border border-slate-200/50">
-                <button
+                {/* <button
                   type="button"
                   onClick={() => {
-                    setIsLogin(true);
                     setError("");
                     setSuccessMsg("");
                   }}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${isLogin ? "bg-blue-600 text-white shadow-md" : "text-slate-500 hover:text-slate-800"}`}
+                  className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${text-slate-500 hover:text-slate-800}`}
                 >
                   Sign In
-                </button>
-                <button
+                </button> */}
+                {/* <button
                   type="button"
                   onClick={() => {
-                    setIsLogin(false);
                     setError("");
                     setSuccessMsg("");
                   }}
-                  className={`px-4 py-1.5 rounded-lg text-sm font-bold transition-all ${!isLogin ? "bg-blue-600 text-white shadow-md" : "text-slate-500 hover:text-slate-800"}`}
+                  className="px-4 py-1.5 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-800"
                 >
                   Join Us
-                </button>
+                </button> */}
               </div>
             </div>
 
@@ -304,7 +190,6 @@ export default function Login() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <AnimatePresence mode="wait">
-                {isLogin ? (
                   // LOGIN FIELDS
                   <motion.div
                     key="login"
@@ -321,13 +206,13 @@ export default function Login() {
                       <div className="relative group">
                         <User className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
                         <input
-                          name="identifier"
+                          name="email"
                           type="text"
                           required
-                          value={formData.identifier}
+                          value={formData.email}
                           onChange={handleChange}
                           className="w-full pl-10 pr-3 py-2.5 text-black border border-slate-200 rounded-xl text-sm font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors"
-                          placeholder="johndoe or you@example.com"
+                          placeholder="Enter you email or username"
                         />
                       </div>
                     </div>
@@ -336,12 +221,12 @@ export default function Login() {
                         <label className="text-xs font-bold text-slate-700">
                           Password
                         </label>
-                        <a
+                        {/* <a
                           href="#"
                           className="text-xs font-bold text-blue-600 hover:underline"
                         >
                           Forgot?
-                        </a>
+                        </a> */}
                       </div>
                       <div className="relative group">
                         <Lock className="absolute left-3.5 top-2.5 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
@@ -367,7 +252,7 @@ export default function Login() {
                     transition={{ duration: 0.3 }}
                     className="space-y-4"
                   >
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           First Name
@@ -402,9 +287,9 @@ export default function Login() {
                           />
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Username
@@ -439,9 +324,9 @@ export default function Login() {
                           />
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    {/* <div className="grid grid-cols-2 gap-3">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Mobile Number
@@ -458,10 +343,10 @@ export default function Login() {
                             placeholder="+91 98765"
                           />
                         </div>
-                      </div>
+                      </div> */}
 
                       {/* FIXED: White Text on Blue Background for Active Toggles */}
-                      <div>
+                      {/* <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           I am a...
                         </label>
@@ -486,9 +371,9 @@ export default function Login() {
                           </button>
                         </div>
                       </div>
-                    </div>
+                    </div> */}
 
-                    <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 mt-1">
+                    {/* <div className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 mt-1">
                       <div>
                         <label className="block text-xs font-bold text-slate-700 mb-1">
                           Password
@@ -523,9 +408,8 @@ export default function Login() {
                           />
                         </div>
                       </div>
-                    </div>
+                    </div> */}
                   </motion.div>
-                )}
               </AnimatePresence>
 
               {/* Submit CTA */}
@@ -547,7 +431,7 @@ export default function Login() {
                     />
                   ) : (
                     <>
-                      {isLogin ? "Sign In Securely" : "Sign In"}{" "}
+                      Sign In
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}
@@ -555,15 +439,15 @@ export default function Login() {
               </div>
             </form>
 
-            <div className="mt-6 flex items-center justify-center">
+            {/* <div className="mt-6 flex items-center justify-center">
               <div className="flex-1 border-t border-slate-200"></div>
               <span className="px-3 bg-white text-slate-400 text-[10px] font-bold uppercase tracking-widest">
                 Or continue with
               </span>
               <div className="flex-1 border-t border-slate-200"></div>
-            </div>
+            </div> */}
 
-            <div className="mt-5 pb-4">
+            {/* <div className="mt-5 pb-4">
               <button
                 onClick={handleGoogleLogin}
                 disabled={isLoading}
@@ -572,7 +456,7 @@ export default function Login() {
                 <Chrome className="w-4 h-4 text-slate-600" />
                 Google
               </button>
-            </div>
+            </div> */}
           </div>
         </div>
       </motion.div>

@@ -20,15 +20,14 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CartService } from "../services/api";
 
 export default function Header() {
+  const userData = JSON.parse(localStorage.getItem("user_details"));
+  console.log('userData: ', userData);
   const navigate = useNavigate();
   const location = useLocation();
-  // const { user, isLoggedIn, logout, dashboardRoute } = useAuth();
-
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isNotiOpen, setIsNotiOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [cartCount, setCartCount] = useState(0);
@@ -94,17 +93,12 @@ export default function Header() {
   ];
   const unreadCount = notifications.filter((n) => !n.read).length;
 
-  // const handleLogout = () => {
-  //   logout();
-  //   setIsProfileOpen(false);
-  //   navigate("/");
-  // };
+  const handleLogout = () => {
+    localStorage.removeItem("user_details")
+    navigate("/");
+  };
 
-  const fName = "User";
-  const lName =  "";
-  const initial = fName.charAt(0).toUpperCase();
-  const role = "learner";
-
+  const initial = userData?.first_name?.charAt(0).toUpperCase();
   return (
     <>
       <header
@@ -160,8 +154,6 @@ export default function Header() {
                 </p>
               </div>
             </div>
-
-            {/* Categories dropdown */}
             <div
               className="relative hidden md:block"
               onMouseEnter={() => setIsCategoryOpen(true)}
@@ -203,8 +195,6 @@ export default function Header() {
               </AnimatePresence>
             </div>
           </div>
-
-          {/* ── Search ── */}
           <div className="flex-1 max-w-2xl hidden md:block relative z-50">
             <div className="relative group">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
@@ -255,35 +245,34 @@ export default function Header() {
               )}
             </AnimatePresence>
           </div>
-
           {/* ── Right actions ── */}
           <div className="flex items-center gap-3 shrink-0">
-            {/* {isLoggedIn ? ( */}
               <>
-                {/* Cart */}
-                <button
-                  onClick={() => navigate("/checkout")}
-                  className="relative w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                  {cartCount > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
-                      {cartCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Notifications */}
-                <div className="relative hidden sm:block">
+                {userData &&
                   <button
-                    onClick={() => setIsNotiOpen(!isNotiOpen)}
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors relative"
+                    onClick={() => navigate("/checkout")}
+                    className="relative w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors"
                   >
-                    <Bell className="w-5 h-5" />
-                    {unreadCount > 0 && (
-                      <span className="absolute top-1.5 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white" />
+                    <ShoppingCart className="w-5 h-5" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 bg-rose-500 text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                        {cartCount}
+                      </span>
                     )}
                   </button>
+                }
+                <div className="relative hidden sm:block">
+                  {userData && 
+                    <button
+                        onClick={() => setIsNotiOpen(!isNotiOpen)}
+                        className="w-10 h-10 rounded-full flex items-center justify-center text-slate-600 hover:bg-slate-100 transition-colors relative"
+                      >
+                        <Bell className="w-5 h-5" />
+                        {unreadCount > 0 && (
+                          <span className="absolute top-1.5 right-2 w-2.5 h-2.5 bg-rose-500 rounded-full border-2 border-white" />
+                        )}
+                    </button>
+                  }
                   <AnimatePresence>
                     {isNotiOpen && (
                       <motion.div
@@ -335,18 +324,16 @@ export default function Header() {
                     )}
                   </AnimatePresence>
                 </div>
-
-                {/* Profile */}
                 <div
                   className="relative"
-                  onMouseEnter={() => setIsProfileOpen(true)}
-                  onMouseLeave={() => setIsProfileOpen(false)}
-                >
+              >
+                {userData && 
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-600 to-cyan-500 flex items-center justify-center text-white font-black text-sm cursor-pointer shadow-md border-2 border-white">
                     {initial}
                   </div>
+                }
+                {userData && (
                   <AnimatePresence>
-                    {isProfileOpen && (
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -356,14 +343,14 @@ export default function Header() {
                       >
                         <div className="px-5 py-3 border-b border-slate-100 mb-2">
                           <p className="text-sm font-extrabold text-slate-900">
-                            {fName} {lName}
+                            {userData?.first_name} {userData?.last_name}
                           </p>
                           <p className="text-xs font-bold text-blue-600 capitalize">
-                            {role}
+                            {userData?.role}
                           </p>
                         </div>
                         <div
-                        onClick={() => navigate("/dashboard")}
+                          onClick={() => navigate("/dashboard")}
                           className="flex items-center gap-3 px-5 py-2.5 hover:bg-blue-50 cursor-pointer group"
                         >
                           <LayoutDashboard className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
@@ -394,55 +381,41 @@ export default function Header() {
                             )}
                           </span>
                         </div>
-                        <div className="border-t border-slate-100 mt-2 pt-2">
-                          <div
-                            // onClick={handleLogout}
-                            className="flex items-center gap-3 px-5 py-2.5 hover:bg-rose-50 cursor-pointer group"
-                          >
-                            <LogOut className="w-4 h-4 text-rose-400 group-hover:text-rose-600" />
-                            <span className="text-sm font-bold text-rose-600">
-                              Sign Out
-                            </span>
-                          </div>
-                        </div>
                       </motion.div>
-                    )}
                   </AnimatePresence>
+                  )}  
                 </div>
               </>
-            {/* ) : ( */}
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => navigate("/login")}
-                  className="text-sm font-bold text-slate-600 hover:text-blue-600 px-4 py-2 transition-colors hidden sm:block"
-                >
-                  Log In
-                </button>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => navigate("/login")}
-                  className="bg-slate-900 text-white px-5 py-2.5 rounded-full text-sm font-bold shadow-lg flex items-center gap-1.5"
-                >
-                  Join Us <Zap className="w-3.5 h-3.5 text-amber-400" />
-                </motion.button>
+              {userData ? (
+                  <button
+                    onClick={handleLogout}
+                    className="text-sm font-bold text-red-600 hover:text-red-700 px-4 py-2 transition-colors hidden sm:block"
+                  >
+                    Log out
+                  </button>
+                  ) : (
+                    <button
+                      onClick={() => navigate("/login")}
+                      className="text-sm font-bold text-slate-600 hover:text-blue-600 px-4 py-2 transition-colors hidden sm:block"
+                    >
+                      Log In
+                    </button>
+                  )}
               </div>
-            {/* )} */}
-
-            <button
-              className="md:hidden p-2 text-slate-600"
-              onClick={() => setIsMobileOpen(!isMobileOpen)}
-            >
-              {isMobileOpen ? (
-                <X className="w-6 h-6" />
-              ) : (
-                <Menu className="w-6 h-6" />
-              )}
-            </button>
+              <button
+                className="md:hidden p-2 text-slate-600"
+                onClick={() => setIsMobileOpen(!isMobileOpen)}
+              >
+                {isMobileOpen ? (
+                  <X className="w-6 h-6" />
+                ) : (
+                  <Menu className="w-6 h-6" />
+                )}
+              </button>
           </div>
         </div>
       </header>
-
       {/* Mobile menu */}
       <AnimatePresence>
         {isMobileOpen && (
@@ -492,10 +465,10 @@ export default function Header() {
                     Profile Settings
                   </button>
                   <button
-                    // onClick={handleLogout}
+                    onClick={handleLogout}
                     className="text-left py-2 text-rose-600"
                   >
-                    Sign Out
+                    Log Out
                   </button>
                 {/* </>
               ) : ( */}
@@ -507,7 +480,7 @@ export default function Header() {
                     }}
                     className="bg-slate-900 text-white py-3 rounded-xl text-center"
                   >
-                    Log In / Join Us
+                    Log In
                   </button>
                 </div>
               {/* )} */}
