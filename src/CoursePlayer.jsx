@@ -147,7 +147,7 @@ const DummyCourseService = {
 
   // WIRE: replace with → CourseService.saveProgress(courseId, videoId)
   //       Backend: POST /courses/:id/progress  { videoId, completed: true }
-  saveProgress: async (courseId, videoId) =>
+  saveProgress: async () =>
     simulateRequest({ message: "Progress saved" }, 400),
 };
 
@@ -221,6 +221,7 @@ export default function CoursePlayer() {
         const first = allVids.find((v) => !v.completed) || allVids[0];
         setCurrentVid(first);
       } catch (err) {
+        console.log('err: ', err);
         toast.error("Could not load course. Try again.", {
           style: {
             borderRadius: "12px",
@@ -517,14 +518,14 @@ export default function CoursePlayer() {
                 { icon: ThumbsUp, label: "1.2k" },
                 { icon: Bookmark, label: "Save" },
                 { icon: Share2, label: "Share" },
-              ].map(({ icon: Icon, label }) => (
+              ].map(({ label }) => (
                 <motion.button
                   key={label}
                   whileHover={{ scale: 1.04 }}
                   whileTap={{ scale: 0.96 }}
                   className="flex items-center gap-2 bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-full text-xs font-bold transition-colors"
                 >
-                  <Icon className="w-3.5 h-3.5" /> {label}
+                  {/* <Icon className="w-3.5 h-3.5" /> {label} */}
                 </motion.button>
               ))}
               <button className="ml-auto w-9 h-9 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-full transition-colors">

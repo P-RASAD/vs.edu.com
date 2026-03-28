@@ -363,7 +363,7 @@ export default function Header() {
                           </p>
                         </div>
                         <div
-                          // onClick={() => navigate(dashboardRoute())}
+                        onClick={() => navigate("/dashboard")}
                           className="flex items-center gap-3 px-5 py-2.5 hover:bg-blue-50 cursor-pointer group"
                         >
                           <LayoutDashboard className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
@@ -410,7 +410,7 @@ export default function Header() {
                   </AnimatePresence>
                 </div>
               </>
-            ) : (
+            {/* ) : ( */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => navigate("/login")}
@@ -466,7 +466,7 @@ export default function Header() {
                 <> */}
                   <button
                     onClick={() => {
-                      // navigate(dashboardRoute());
+                      navigate("/dashboard");
                       setIsMobileOpen(false);
                     }}
                     className="text-left py-2 border-b border-slate-100 text-blue-600"
