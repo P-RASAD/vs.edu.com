@@ -1,548 +1,2874 @@
 // src/SuperAdmin.jsx
+// ─────────────────────────────────────────────────────────────────────────────
+// UNIFIED COMMAND CENTER — works for BOTH "admin" AND "superadmin"
+// Role is read from AuthContext → user.role  (or localStorage fallback)
+//
+// admin:      Overview · All Courses (free view) · Moderation Queue · Users
+// superadmin: All above + Final Approval Gate + Sub-admin team + Traffic + Finance
+//
+// Same VSintellecta logo, same brand colors (#0057FF / #00C2FF), same layout.
+// Special tabs & options appear/disappear based on role — no separate component.
+// ─────────────────────────────────────────────────────────────────────────────
 import React, { useState, useEffect } from "react";
 import {
-  Layers, Users, DollarSign, BookOpen, Shield, Search, Bell, Activity,
-  ArrowUpRight, ArrowDownRight, CheckCircle, XCircle, TrendingUp, PlayCircle,
-  AlertTriangle, ArrowLeft, Ban, CheckSquare, RefreshCw, Loader2,
-  FileText, Download, Eye, Clock, BarChart3,
+  Activity,
+  Users,
+  DollarSign,
+  BookOpen,
+  Shield,
+  Search,
+  Bell,
+  ArrowUpRight,
+  ArrowDownRight,
+  CheckCircle,
+  XCircle,
+  TrendingUp,
+  PlayCircle,
+  AlertTriangle,
+  ArrowLeft,
+  Ban,
+  CheckSquare,
+  LogOut,
+  RefreshCw,
+  Loader2,
+  Download,
+  Eye,
+  Clock,
+  BarChart3,
+  Globe,
+  Zap,
+  Star,
+  ShieldCheck,
+  ChevronRight,
+  Play,
+  Unlock,
+  Lock,
+  Database,
+  Server,
+  Wifi,
+  Filter,
+  GraduationCap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import toast from "react-hot-toast";
-// import { useAuth } from "./context/AuthContext";
-import { AdminService } from "./services/api";
+import toast, { Toaster } from "react-hot-toast";
+import { AdminService, CourseService } from "./services/api";
 
-const toastOK  = { borderRadius: "12px", background: "#0f172a", color: "#fff", fontSize: "13px", fontWeight: 600 };
-const toastErr = { borderRadius: "12px", background: "#fff1f2", color: "#e11d48", fontSize: "13px", fontWeight: 600, border: "1px solid #fecdd3" };
+// ─────────────────────────────────────────────
+// BRAND TOKENS — VSintellecta
+// ─────────────────────────────────────────────
+const B = {
+  primary: "#0057FF",
+  cyan: "#00C2FF",
+  dark: "#050E2B",
+  surface: "rgba(255,255,255,0.04)",
+  border: "rgba(255,255,255,0.08)",
+};
 
-const pageV = { initial: { opacity: 0, y: 12 }, in: { opacity: 1, y: 0 }, out: { opacity: 0, y: -12 } };
+const GLOW = {
+  overview: "#0057FF",
+  courses: "#00C2FF",
+  moderation: "#f59e0b",
+  approval: "#dc2626",
+  users: "#8b5cf6",
+  finance: "#10b981",
+  traffic: "#06b6d4",
+};
 
+const toastOK = {
+  borderRadius: "12px",
+  background: B.dark,
+  color: "#fff",
+  fontSize: "13px",
+  fontWeight: 600,
+  border: "1px solid rgba(0,194,255,0.3)",
+};
+const toastErr = {
+  borderRadius: "12px",
+  background: "#1a0a0a",
+  color: "#f87171",
+  fontSize: "13px",
+  fontWeight: 600,
+  border: "1px solid #7f1d1d",
+};
+
+const pV = {
+  initial: { opacity: 0, y: 14 },
+  in: { opacity: 1, y: 0 },
+  out: { opacity: 0, y: -8 },
+};
+
+// ── Mini sparkline ──
+const Sparkline = ({ data, color }) => {
+  const max = Math.max(...data);
+  return (
+    <div className="flex items-end gap-0.5 h-7">
+      {data.map((v, i) => (
+        <motion.div
+          key={i}
+          initial={{ height: 0 }}
+          animate={{ height: `${(v / max) * 100}%` }}
+          transition={{ duration: 0.6, delay: i * 0.04, ease: "easeOut" }}
+          className="flex-1 rounded-t-sm min-h-[2px]"
+          style={{
+            background: `${color}${i === data.length - 1 ? "ff" : "55"}`,
+          }}
+        />
+      ))}
+    </div>
+  );
+};
+
+// ── Animated pulse dot ──
+const Pulse = ({ color = "#10b981" }) => (
+  <span className="relative flex h-2.5 w-2.5">
+    <span
+      className="animate-ping absolute inline-flex h-full w-full rounded-full opacity-60"
+      style={{ background: color }}
+    />
+    <span
+      className="relative inline-flex rounded-full h-2.5 w-2.5"
+      style={{ background: color }}
+    />
+  </span>
+);
+
+// ─────────────────────────────────────────────
+// MAIN COMPONENT
+// ─────────────────────────────────────────────
 export default function SuperAdmin() {
-  const userData = JSON.parse(localStorage.getItem("user_details"));
-  const navigate        = useNavigate();
-  const [activeTab,     setActiveTab]     = useState("overview");
+  const navigate = useNavigate();
+
+  // Auth — read from localStorage (no AuthContext dependency to keep this self-contained)
+  const userData = (() => {
+    try {
+      return JSON.parse(localStorage.getItem("user_details") || "null");
+    } catch {
+      return null;
+    }
+  })();
+  const role = userData?.role || "admin";
+  const isSuperAdmin = role === "superadmin" || role === "super_admin";
+  const userName =
+    userData?.first_name || (isSuperAdmin ? "Super Admin" : "Admin");
+
+  const [activeTab, setActiveTab] = useState("overview");
   const [reviewingCourse, setReviewingCourse] = useState(null);
-  const [activeVideo,   setActiveVideo]   = useState("");
-  // API state
-  const [stats,         setStats]         = useState(null);
-  const [users,         setUsers]         = useState([]);
-  const [pending,       setPending]       = useState([]);
-  const [transactions,  setTransactions]  = useState([]);
-  const [loadingStats,  setLoadingStats]  = useState(true);
-  const [loadingUsers,  setLoadingUsers]  = useState(false);
-  const [loadingPending,setLoadingPending]= useState(false);
-  const [actioning,     setActioning]     = useState(null);
-  const [checklist,     setChecklist]     = useState({ copyright: false, content: false, quality: false });
-  // Load stats on mount
+  const [activeVideo, setActiveVideo] = useState("");
+  const [checklist, setChecklist] = useState({
+    copyright: false,
+    content: false,
+    quality: false,
+    originality: false,
+  });
+  const [actioning, setActioning] = useState(null);
+  const [previewCourse, setPreviewCourse] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // API data state
+  const [stats, setStats] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [pending, setPending] = useState([]);
+  const [allCourses, setAllCourses] = useState([]);
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Boot — load everything
   useEffect(() => {
-    const load = async () => {
-      setLoadingStats(true);
+    (async () => {
       try {
-        const [sRes, tRes] = await Promise.all([
+        const [s, u, p, c, t] = await Promise.all([
           AdminService.getPlatformStats(),
+          AdminService.getUsers(),
+          AdminService.getPendingCourses(),
+          CourseService.getAllCourses(),
           AdminService.getTransactions(),
         ]);
-        setStats(sRes.data);
-        setTransactions(tRes.data);
-      } catch { toast.error("Failed to load stats", { style: toastErr }); }
-      finally { setLoadingStats(false); }
-    };
-    load();
+        setStats(s.data);
+        setUsers(u.data);
+        setPending(p.data);
+        setAllCourses(c.data);
+        setTransactions(t.data);
+      } catch {
+        toast.error("Failed to load platform data", { style: toastErr });
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
-  // Load users when tab switches
-  useEffect(() => {
-    if (activeTab !== "users") return;
-    const load = async () => {
-      setLoadingUsers(true);
-      try { const res = await AdminService.getUsers(); setUsers(res.data); }
-      catch { toast.error("Failed to load users", { style: toastErr }); }
-      finally { setLoadingUsers(false); }
-    };
-    load();
-  }, [activeTab]);
-
-  // Load pending courses when tab switches
-  useEffect(() => {
-    if (activeTab !== "moderation") return;
-    const load = async () => {
-      setLoadingPending(true);
-      try { const res = await AdminService.getPendingCourses(); setPending(res.data); }
-      catch { toast.error("Failed to load pending courses", { style: toastErr }); }
-      finally { setLoadingPending(false); }
-    };
-    load();
-  }, [activeTab]);
-
-  const handleReview = (course) => {
-    setReviewingCourse(course);
-    setActiveVideo(course.curriculum[0].video);
-    setChecklist({ copyright: false, content: false, quality: false });
-  };
-
-  const handleModerate = async (action) => {
-    const allChecked = Object.values(checklist).every(Boolean);
-    if (action === "approved" && !allChecked) {
-      toast.error("Complete the safety checklist before approving.", { style: toastErr }); return;
+  // Moderate a course
+  const moderate = async (courseId, action) => {
+    if (action === "approved" && !Object.values(checklist).every(Boolean)) {
+      toast.error("Complete all 4 safety checks first.", { style: toastErr });
+      return;
     }
-    setActioning(reviewingCourse.id);
+    setActioning(courseId);
     try {
-      // WIRE: AdminService.moderateCourse → PATCH /admin/courses/:id/moderate
-      await AdminService.moderateCourse(reviewingCourse.id, action);
-      setPending(p => p.filter(c => c.id !== reviewingCourse.id));
+      await AdminService.moderateCourse(courseId, action);
+      setPending((p) => p.filter((c) => c.id !== courseId));
       setReviewingCourse(null);
-      toast.success(`Course ${action === "approved" ? "approved ✓" : "rejected"}`, {
-        style: toastOK,
-        iconTheme: { primary: action === "approved" ? "#34d399" : "#f87171", secondary: "#0f172a" },
-      });
-    } catch { toast.error("Action failed — try again", { style: toastErr }); }
-    finally { setActioning(null); }
+      toast.success(
+        action === "approved"
+          ? isSuperAdmin
+            ? "✓ Final Approval — Course is now Live!"
+            : "✓ Pre-approved — sent to Super Admin"
+          : "Course rejected and tutor notified",
+        { style: toastOK },
+      );
+    } catch {
+      toast.error("Action failed — try again", { style: toastErr });
+    } finally {
+      setActioning(null);
+    }
   };
-
-  const statCards = stats ? [
-    { title: "Total Revenue",     value: stats.totalPlatformRevenue, trend: "+14.2%", isUp: true,  icon: <DollarSign className="w-6 h-6 text-purple-600" />, bg: "bg-purple-100" },
-    { title: "Active Students",   value: stats.totalActiveUsers,     trend: "+5.4%",  isUp: true,  icon: <Users      className="w-6 h-6 text-blue-600" />,   bg: "bg-blue-100"   },
-    { title: "Published Courses", value: String(stats.publishedCourses), trend: "+12",isUp: true,  icon: <BookOpen   className="w-6 h-6 text-cyan-600" />,   bg: "bg-cyan-100"   },
-    { title: "Platform Profit",   value: stats.platformProfit,       trend: "+18.1%", isUp: true,  icon: <TrendingUp className="w-6 h-6 text-emerald-600" />,bg: "bg-emerald-100"},
-  ] : [];
-
-  const navItems = [
-    { id: "overview",    label: "Platform Overview", icon: <Activity className="w-5 h-5" />  },
-    { id: "users",       label: "User Management",   icon: <Users     className="w-5 h-5" />  },
-    { id: "moderation",  label: "Course Moderation", icon: <Shield    className="w-5 h-5" />, badge: pending.length },
-    { id: "finance",     label: "Financial Reports", icon: <DollarSign className="w-5 h-5" /> },
-  ];
 
   const handleLogout = () => {
     localStorage.clear();
     navigate("/");
   };
 
+  // Sub-admins (superadmin manages these)
+  const subAdmins = [
+    {
+      id: "A1",
+      name: "Kavitha Reddy",
+      email: "kavitha@vs.com",
+      region: "South India",
+      pending: 4,
+      approved: 127,
+      status: "online",
+    },
+    {
+      id: "A2",
+      name: "Rohan Mehta",
+      email: "rohan@vs.com",
+      region: "West India",
+      pending: 2,
+      approved: 98,
+      status: "online",
+    },
+    {
+      id: "A3",
+      name: "Anjali Sharma",
+      email: "anjali@vs.com",
+      region: "North India",
+      pending: 6,
+      approved: 145,
+      status: "away",
+    },
+    {
+      id: "A4",
+      name: "Pradeep Kumar",
+      email: "pradeep@vs.com",
+      region: "East India",
+      pending: 1,
+      approved: 76,
+      status: "offline",
+    },
+    {
+      id: "A5",
+      name: "Divya Iyer",
+      email: "divya@vs.com",
+      region: "Global",
+      pending: 3,
+      approved: 112,
+      status: "online",
+    },
+  ];
+
+  const trafficData = [
+    { hour: "00", views: 120 },
+    { hour: "04", views: 60 },
+    { hour: "08", views: 890 },
+    { hour: "12", views: 2400 },
+    { hour: "16", views: 3100 },
+    { hour: "20", views: 1800 },
+    { hour: "23", views: 420 },
+  ];
+
+  // ── Nav items — superadmin gets extra tabs ──
+  const navItems = [
+    {
+      id: "overview",
+      label: "Command Overview",
+      icon: Activity,
+      glow: GLOW.overview,
+    },
+    {
+      id: "courses",
+      label: "All Courses",
+      icon: BookOpen,
+      glow: GLOW.courses,
+      badge: allCourses.length,
+    },
+    {
+      id: "moderation",
+      label: isSuperAdmin ? "Sub-Admin Queue" : "Moderation",
+      icon: Shield,
+      glow: GLOW.moderation,
+      badge: pending.length,
+      urgent: pending.length > 0,
+    },
+    ...(isSuperAdmin
+      ? [
+          {
+            id: "approval",
+            label: "Final Approval",
+            icon: ShieldCheck,
+            glow: GLOW.approval,
+            badge: pending.length,
+            urgent: pending.length > 0,
+          },
+        ]
+      : []),
+    { id: "users", label: "Users & Admins", icon: Users, glow: GLOW.users },
+    ...(isSuperAdmin
+      ? [
+          {
+            id: "traffic",
+            label: "Site Traffic",
+            icon: Globe,
+            glow: GLOW.traffic,
+          },
+          {
+            id: "finance",
+            label: "Financial Reports",
+            icon: DollarSign,
+            glow: GLOW.finance,
+          },
+        ]
+      : []),
+  ];
+
+  const roleLabel = isSuperAdmin ? "Super Admin" : "Admin";
+  const roleColor = isSuperAdmin ? "#dc2626" : "#8b5cf6";
+  const roleDesc = isSuperAdmin
+    ? "System Owner · All Access"
+    : "Platform Moderator";
+
+  // ══════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ══════════════════════════════════════════════════════════════════════
   return (
-    <div className="flex h-screen bg-[#F4F7FE] text-slate-800 font-sans overflow-hidden selection:bg-purple-200">
-      {/* ── Sidebar ── */}
-      <aside className="w-72 bg-white border-r border-slate-200 flex flex-col shrink-0 z-20 shadow-xl shadow-slate-200/20">
-        <div className="h-20 flex items-center px-7 border-b border-slate-100 cursor-pointer gap-3" onClick={() => navigate("/")}>
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center shadow-lg shadow-purple-500/30 shrink-0">
-            <Layers className="w-5 h-5 text-white" />
+    <div
+      className="flex h-screen overflow-hidden font-sans"
+      style={{
+        background:
+          "linear-gradient(135deg,#02050f 0%,#050E2B 50%,#030818 100%)",
+      }}
+    >
+      <Toaster position="top-right" />
+
+      {/* ═══════════════════════════════════════════
+          SIDEBAR
+      ═══════════════════════════════════════════ */}
+      <motion.aside
+        animate={{ width: sidebarOpen ? 260 : 66 }}
+        transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        className="h-full flex flex-col shrink-0 relative z-30 overflow-hidden"
+        style={{
+          background:
+            "linear-gradient(180deg,rgba(0,87,255,0.09),rgba(5,14,43,0.96))",
+          borderRight: `1px solid ${B.border}`,
+          backdropFilter: "blur(40px)",
+        }}
+      >
+        {/* ── Logo ── */}
+        <div
+          className="h-14 flex items-center px-3.5 gap-3 shrink-0 cursor-pointer"
+          style={{ borderBottom: `1px solid ${B.border}` }}
+          onClick={() => navigate("/")}
+        >
+          <div
+            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden"
+            style={{
+              background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
+            }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(circle at 30% 25%,rgba(255,255,255,0.3),transparent 60%)",
+              }}
+            />
+            {/* VS SVG Logo */}
+            <svg
+              width="20"
+              height="18"
+              viewBox="0 0 44 40"
+              fill="none"
+              className="relative z-10"
+            >
+              <polyline
+                points="12,10 20,28 28,10"
+                stroke="white"
+                strokeWidth="3.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+              <path
+                d="M30 14 C26 10,20 10,20 15 C20 19,30 19,30 24 C30 29,24 30,20 27"
+                stroke="#38bdf8"
+                strokeWidth="2.4"
+                strokeLinecap="round"
+                fill="none"
+              />
+            </svg>
           </div>
-          <h1 className="text-xl font-black tracking-tight text-slate-900">
-            <span className="text-purple-600">VS</span>intellecta
-          </h1>
+          <AnimatePresence>
+            {sidebarOpen && (
+              <motion.div
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -6 }}
+              >
+                <p className="text-[14px] font-black tracking-tight text-white leading-none">
+                  <span style={{ color: B.cyan }}>VS</span>intellecta
+                </p>
+                <p
+                  className="text-[9px] font-bold uppercase tracking-[0.18em] mt-0.5"
+                  style={{ color: "rgba(0,194,255,0.45)" }}
+                >
+                  {roleLabel}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto hide-scrollbar">
-          <p className="px-4 text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4">Command Center</p>
-          {navItems.map(item => (
-            <button key={item.id} onClick={() => { setActiveTab(item.id); setReviewingCourse(null); }}
-              className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl font-bold transition-all text-sm ${
-                activeTab === item.id
-                  ? "bg-gradient-to-r from-purple-600 to-blue-600 text-white shadow-lg shadow-purple-500/20"
-                  : "text-slate-500 hover:bg-slate-50 hover:text-purple-600"
-              }`}>
-              {item.icon} {item.label}
-              {item.badge > 0 && (
-                <span className={`ml-auto text-[10px] px-2 py-0.5 rounded-full font-black ${activeTab === item.id ? "bg-white text-purple-600" : "bg-rose-100 text-rose-600"}`}>
-                  {item.badge}
-                </span>
-              )}
-            </button>
-          ))}
+        {/* ── Live status ── */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mx-3 mt-3 px-3 py-2 rounded-xl flex items-center gap-2.5"
+              style={{
+                background: "rgba(16,185,129,0.08)",
+                border: "1px solid rgba(16,185,129,0.2)",
+              }}
+            >
+              <Pulse color="#10b981" />
+              <div className="min-w-0">
+                <p className="text-[10px] font-black text-emerald-400 uppercase tracking-wider">
+                  System Nominal
+                </p>
+                <p className="text-[9px] text-emerald-600 font-medium truncate">
+                  99.98% uptime · All services running
+                </p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── Nav ── */}
+        <nav className="flex-1 overflow-y-auto px-2 py-4 space-y-0.5 hide-scrollbar">
+          <AnimatePresence>
+            {sidebarOpen && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-3 text-[9px] font-black uppercase tracking-[0.2em] mb-3"
+                style={{ color: "rgba(255,255,255,0.2)" }}
+              >
+                Command Center
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          {navItems.map((item) => {
+            const isActive = activeTab === item.id;
+            const Icon = item.icon;
+            return (
+              <motion.button
+                key={item.id}
+                whileTap={{ scale: 0.97 }}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setReviewingCourse(null);
+                }}
+                className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
+                style={{
+                  background: isActive ? `${item.glow}18` : "transparent",
+                  border: `1px solid ${isActive ? `${item.glow}40` : "transparent"}`,
+                }}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebarActive"
+                    className="absolute inset-0 rounded-xl"
+                    style={{ background: `${item.glow}10` }}
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+                <div className="relative z-10 w-5 h-5 flex items-center justify-center shrink-0">
+                  <Icon
+                    style={{
+                      color: isActive ? item.glow : "rgba(255,255,255,0.35)",
+                      width: 17,
+                      height: 17,
+                    }}
+                  />
+                </div>
+                <AnimatePresence>
+                  {sidebarOpen && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="flex-1 flex items-center justify-between min-w-0"
+                    >
+                      <span
+                        className="text-xs font-bold truncate relative z-10"
+                        style={{
+                          color: isActive ? "white" : "rgba(255,255,255,0.5)",
+                        }}
+                      >
+                        {item.label}
+                      </span>
+                      {item.badge > 0 && (
+                        <span
+                          className="text-[9px] font-black px-1.5 py-0.5 rounded-full shrink-0 ml-1"
+                          style={{
+                            background: item.urgent
+                              ? "#7f1d1d"
+                              : `${item.glow}25`,
+                            color: item.urgent ? "#fca5a5" : item.glow,
+                            border: `1px solid ${item.urgent ? "#991b1b" : `${item.glow}40`}`,
+                          }}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                {item.urgent && !sidebarOpen && (
+                  <div className="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500" />
+                )}
+              </motion.button>
+            );
+          })}
         </nav>
 
-        <div className="p-5 border-t border-slate-100 bg-slate-50/50">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 border border-purple-200 flex items-center justify-center text-purple-700 font-black text-sm shadow-sm">SA</div>
-            <div>
-              <p className="text-sm font-bold text-slate-900">{userData?.role }</p>
-              <p className="text-xs text-slate-500 font-medium">{userData?.first_name} { userData?.last_name}</p>
+        {/* ── Sub-admin count (superadmin only) ── */}
+        <AnimatePresence>
+          {sidebarOpen && isSuperAdmin && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="mx-3 mb-3 px-3 py-2.5 rounded-xl"
+              style={{ background: B.surface, border: `1px solid ${B.border}` }}
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <Shield style={{ width: 12, height: 12, color: B.cyan }} />
+                <p
+                  className="text-[9px] font-black uppercase tracking-wider"
+                  style={{ color: "rgba(255,255,255,0.35)" }}
+                >
+                  Your Sub-Admins
+                </p>
+              </div>
+              <div className="flex -space-x-1.5 mb-1">
+                {subAdmins.map((a, i) => (
+                  <div
+                    key={i}
+                    className="w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-black text-white border border-[#050E2B]"
+                    style={{ background: `hsl(${220 + i * 30},75%,50%)` }}
+                  >
+                    {a.name.charAt(0)}
+                  </div>
+                ))}
+              </div>
+              <p
+                className="text-[9px] font-medium"
+                style={{ color: "rgba(255,255,255,0.25)" }}
+              >
+                {subAdmins.filter((a) => a.status === "online").length} online ·{" "}
+                {subAdmins.length} total
+              </p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* ── User pill + collapse toggle ── */}
+        <div
+          className="p-2 shrink-0"
+          style={{ borderTop: `1px solid ${B.border}` }}
+        >
+          <div
+            className="flex items-center gap-2.5 p-2.5 rounded-xl mb-1.5"
+            style={{ background: B.surface, border: `1px solid ${B.border}` }}
+          >
+            <div
+              className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-white shrink-0"
+              style={{
+                background: `linear-gradient(135deg,${roleColor},${B.cyan})`,
+              }}
+            >
+              {userName.charAt(0).toUpperCase()}
             </div>
+            <AnimatePresence>
+              {sidebarOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex-1 min-w-0"
+                >
+                  <p className="text-xs font-bold text-white truncate">
+                    {userName}
+                  </p>
+                  <p
+                    className="text-[9px] font-medium truncate"
+                    style={{ color: "rgba(0,194,255,0.55)" }}
+                  >
+                    {roleDesc}
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            {sidebarOpen && (
+              <button
+                onClick={handleLogout}
+                className="p-1.5 rounded-lg hover:bg-red-500/10 group transition-all shrink-0"
+              >
+                <LogOut
+                  style={{ width: 13, height: 13 }}
+                  className="text-slate-600 group-hover:text-red-400 transition-colors"
+                />
+              </button>
+            )}
           </div>
           <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-rose-600 hover:bg-rose-50 transition-colors">
-            Log Out
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="w-full py-1 rounded-xl text-[9px] font-bold flex items-center justify-center gap-1 hover:bg-white/5 transition-all"
+            style={{ color: "rgba(255,255,255,0.2)" }}
+          >
+            <ChevronRight
+              style={{ width: 11, height: 11 }}
+              className={sidebarOpen ? "rotate-180" : ""}
+            />
+            {sidebarOpen && "Collapse"}
           </button>
         </div>
-      </aside>
+      </motion.aside>
 
-      {/* ── Main ── */}
+      {/* ═══════════════════════════════════════════
+          MAIN CONTENT
+      ═══════════════════════════════════════════ */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-400/8 rounded-full blur-[100px] pointer-events-none" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-400/8 rounded-full blur-[100px] pointer-events-none" />
+        {/* Ambient glow per active tab */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div
+            className="absolute -top-40 left-1/3 w-[600px] h-[300px] rounded-full blur-[120px]"
+            style={{
+              background: `${GLOW[activeTab] || B.primary}14`,
+              transition: "background 0.5s",
+            }}
+          />
+          <div
+            className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full blur-[100px]"
+            style={{ background: "rgba(0,194,255,0.04)" }}
+          />
+        </div>
 
-        {/* Top bar */}
-        <header className="h-20 bg-white/80 backdrop-blur-xl border-b border-slate-200 px-8 flex items-center justify-between shrink-0 z-10 shadow-sm">
-          <h2 className="text-2xl font-black text-slate-900 capitalize">
-            {activeTab.replace("-", " ")}
-            {reviewingCourse && ` — Reviewing`}
-          </h2>
-          <div className="flex items-center gap-4">
-            <div className="relative group">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 group-focus-within:text-purple-600 transition-colors" />
-              <input type="text" placeholder="Search anything..."
-                className="pl-11 pr-4 py-2.5 bg-slate-100/50 border border-slate-200 rounded-full focus:outline-none focus:border-purple-300 focus:bg-white text-sm font-bold w-56 text-slate-900 transition-all shadow-inner" />
-            </div>
-            <button className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 hover:text-purple-600 hover:shadow-md transition-all relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-2 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white" />
-            </button>
-            <button
-              onClick={handleLogout}
-              className="text-sm font-bold text-red-600 hover:text-red-700 px-4 py-2 transition-colors hidden sm:block"
+        {/* ── Top bar ── */}
+        <header
+          className="h-[52px] px-6 flex items-center justify-between shrink-0 relative z-10"
+          style={{
+            borderBottom: `1px solid ${B.border}`,
+            background: "rgba(5,14,43,0.7)",
+            backdropFilter: "blur(24px)",
+          }}
+        >
+          <div className="flex items-center gap-3">
+            {navItems.find((n) => n.id === activeTab) &&
+              React.createElement(
+                navItems.find((n) => n.id === activeTab).icon,
+                {
+                  style: {
+                    color: GLOW[activeTab] || B.cyan,
+                    width: 16,
+                    height: 16,
+                  },
+                },
+              )}
+            <h2 className="text-sm font-black text-white">
+              {navItems.find((n) => n.id === activeTab)?.label}
+            </h2>
+            <span
+              className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+              style={{
+                background: isSuperAdmin
+                  ? "rgba(220,38,38,0.15)"
+                  : "rgba(139,92,246,0.15)",
+                color: isSuperAdmin ? "#f87171" : "#a78bfa",
+                border: `1px solid ${isSuperAdmin ? "rgba(220,38,38,0.3)" : "rgba(139,92,246,0.3)"}`,
+              }}
             >
-              Log out
+              {roleLabel}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {/* Live users counter */}
+            <div
+              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl"
+              style={{ background: B.surface, border: `1px solid ${B.border}` }}
+            >
+              <Pulse color={B.cyan} />
+              <span className="text-[10px] font-bold" style={{ color: B.cyan }}>
+                2,847 active now
+              </span>
+            </div>
+
+            {/* Search */}
+            <div className="relative">
+              <Search
+                style={{
+                  position: "absolute",
+                  left: 10,
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  width: 13,
+                  height: 13,
+                  color: "rgba(255,255,255,0.3)",
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search platform..."
+                className="pl-8 pr-4 py-1.5 rounded-xl text-xs font-medium focus:outline-none w-40 transition-all"
+                style={{
+                  background: B.surface,
+                  border: `1px solid ${B.border}`,
+                  color: "white",
+                }}
+                onFocus={(e) => (e.target.style.borderColor = B.cyan)}
+                onBlur={(e) => (e.target.style.borderColor = B.border)}
+              />
+            </div>
+
+            {/* Notifications */}
+            <button
+              className="relative w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/5 transition-all"
+              style={{ border: `1px solid ${B.border}` }}
+            >
+              <Bell
+                style={{
+                  width: 15,
+                  height: 15,
+                  color: "rgba(255,255,255,0.45)",
+                }}
+              />
+              {pending.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full text-[9px] font-black flex items-center justify-center bg-red-500 text-white">
+                  {pending.length}
+                </span>
+              )}
             </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 hide-scrollbar relative z-10">
-          <div className="max-w-7xl mx-auto">
-            <AnimatePresence mode="wait">
+        {/* ── Scroll content ── */}
+        <div
+          className="flex-1 overflow-y-auto hide-scrollbar relative z-10"
+          style={{ padding: "18px 22px" }}
+        >
+          <AnimatePresence mode="wait">
+            {/* ════════════════════════════════════════
+                OVERVIEW
+            ════════════════════════════════════════ */}
+            {activeTab === "overview" && (
+              <motion.div
+                key="overview"
+                variants={pV}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+                className="space-y-5"
+              >
+                {/* Stat cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {loading
+                    ? Array(4)
+                        .fill(0)
+                        .map((_, i) => (
+                          <div
+                            key={i}
+                            className="rounded-2xl p-5 animate-pulse"
+                            style={{
+                              background: B.surface,
+                              border: `1px solid ${B.border}`,
+                              height: 116,
+                            }}
+                          />
+                        ))
+                    : [
+                        {
+                          label: "Total Revenue",
+                          val: stats?.totalPlatformRevenue || "₹1.24 Cr",
+                          sub: "All time",
+                          icon: DollarSign,
+                          glow: "#10b981",
+                          trend: "+14.2%",
+                          up: true,
+                          spark: [30, 42, 38, 55, 48, 72, 65, 80, 75, 100],
+                        },
+                        {
+                          label: "Active Users",
+                          val: stats?.totalActiveUsers || "24,592",
+                          sub: "Platform",
+                          icon: Users,
+                          glow: B.primary,
+                          trend: "+5.4%",
+                          up: true,
+                          spark: [50, 62, 45, 70, 58, 80, 72, 88, 82, 95],
+                        },
+                        {
+                          label: "Pending Review",
+                          val: String(pending.length),
+                          sub: "Action needed",
+                          icon: Shield,
+                          glow: "#f59e0b",
+                          trend: pending.length > 0 ? "⚠ Now" : "All clear",
+                          up: pending.length === 0,
+                          spark: [
+                            8,
+                            12,
+                            5,
+                            14,
+                            10,
+                            6,
+                            9,
+                            11,
+                            7,
+                            pending.length,
+                          ],
+                        },
+                        {
+                          label: "Platform Profit",
+                          val: stats?.platformProfit || "₹37.2 L",
+                          sub: "Quarter",
+                          icon: TrendingUp,
+                          glow: B.cyan,
+                          trend: "+18.1%",
+                          up: true,
+                          spark: [40, 52, 48, 65, 58, 75, 70, 85, 80, 100],
+                        },
+                      ].map((s, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, y: 16 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.07 }}
+                          whileHover={{ y: -2 }}
+                          className="rounded-2xl p-5 relative overflow-hidden"
+                          style={{
+                            background: `linear-gradient(135deg,${s.glow}12,${s.glow}06)`,
+                            border: `1px solid ${s.glow}28`,
+                          }}
+                        >
+                          <div
+                            className="absolute -bottom-3 -right-3 w-20 h-20 rounded-full blur-xl"
+                            style={{ background: `${s.glow}18` }}
+                          />
+                          <div className="flex items-start justify-between mb-3">
+                            <div
+                              className="w-8 h-8 rounded-xl flex items-center justify-center"
+                              style={{ background: `${s.glow}18` }}
+                            >
+                              <s.icon
+                                style={{ color: s.glow, width: 16, height: 16 }}
+                              />
+                            </div>
+                            <span
+                              className="text-[10px] font-black px-2 py-0.5 rounded-full flex items-center gap-0.5"
+                              style={{
+                                background: s.up
+                                  ? "rgba(16,185,129,0.12)"
+                                  : "rgba(239,68,68,0.12)",
+                                color: s.up ? "#34d399" : "#f87171",
+                              }}
+                            >
+                              {s.up ? (
+                                <ArrowUpRight style={{ width: 9, height: 9 }} />
+                              ) : (
+                                <ArrowDownRight
+                                  style={{ width: 9, height: 9 }}
+                                />
+                              )}
+                              {s.trend}
+                            </span>
+                          </div>
+                          <p
+                            className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                            style={{ color: "rgba(255,255,255,0.3)" }}
+                          >
+                            {s.label}
+                          </p>
+                          <p className="text-xl font-black text-white mb-0.5">
+                            {s.val}
+                          </p>
+                          <p
+                            className="text-[10px] font-medium mb-1.5"
+                            style={{ color: "rgba(255,255,255,0.25)" }}
+                          >
+                            {s.sub}
+                          </p>
+                          <Sparkline data={s.spark} color={s.glow} />
+                        </motion.div>
+                      ))}
+                </div>
 
-              {/* ── OVERVIEW ── */}
-              {activeTab === "overview" && (
-                <motion.div key="overview" variants={pageV} initial="initial" animate="in" exit="out" transition={{ duration: 0.3 }} className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {loadingStats ? (
-                      Array(4).fill(0).map((_, i) => (
-                        <div key={i} className="bg-white border border-slate-100 p-6 rounded-[1.5rem] shadow-sm animate-pulse">
-                          <div className="w-12 h-12 rounded-2xl bg-slate-200 mb-4" />
-                          <div className="h-4 bg-slate-200 rounded mb-2 w-1/2" />
-                          <div className="h-8 bg-slate-200 rounded w-3/4" />
+                {/* System health row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      label: "API Response",
+                      val: "128ms",
+                      icon: Zap,
+                      color: B.cyan,
+                      bar: 87,
+                    },
+                    {
+                      label: "DB Load",
+                      val: "34%",
+                      icon: Database,
+                      color: "#10b981",
+                      bar: 34,
+                    },
+                    {
+                      label: "Server CPU",
+                      val: "52%",
+                      icon: Server,
+                      color: "#f59e0b",
+                      bar: 52,
+                    },
+                  ].map((s, i) => (
+                    <div
+                      key={i}
+                      className="rounded-2xl px-4 py-3.5 flex items-center gap-4"
+                      style={{
+                        background: B.surface,
+                        border: `1px solid ${B.border}`,
+                      }}
+                    >
+                      <div
+                        className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                        style={{
+                          background: `${s.color}15`,
+                          border: `1px solid ${s.color}25`,
+                        }}
+                      >
+                        <s.icon
+                          style={{ color: s.color, width: 17, height: 17 }}
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex justify-between items-center mb-1.5">
+                          <p
+                            className="text-[10px] font-bold uppercase tracking-wider"
+                            style={{ color: "rgba(255,255,255,0.3)" }}
+                          >
+                            {s.label}
+                          </p>
+                          <p className="text-xs font-black text-white">
+                            {s.val}
+                          </p>
                         </div>
-                      ))
-                    ) : statCards.map((stat, idx) => (
-                      <motion.div key={idx} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.08 }}
-                        whileHover={{ y: -3 }}
-                        className="bg-white border border-slate-100 p-6 rounded-[1.5rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] transition-shadow relative overflow-hidden">
-                        <div className="flex items-center justify-between mb-4 relative z-10">
-                          <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${stat.bg}`}>{stat.icon}</div>
-                          <span className={`text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1 ${stat.isUp ? "text-emerald-700 bg-emerald-100" : "text-rose-700 bg-rose-100"}`}>
-                            {stat.isUp ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />} {stat.trend}
+                        <div
+                          className="h-1.5 rounded-full overflow-hidden"
+                          style={{ background: "rgba(255,255,255,0.06)" }}
+                        >
+                          <motion.div
+                            className="h-full rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${s.bar}%` }}
+                            transition={{
+                              duration: 1.1,
+                              ease: "easeOut",
+                              delay: i * 0.15,
+                            }}
+                            style={{ background: s.color }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Sub-admin team (superadmin) OR stats strip (admin) */}
+                {isSuperAdmin ? (
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: B.surface,
+                      border: `1px solid ${B.border}`,
+                    }}
+                  >
+                    <div
+                      className="px-5 py-3.5 flex items-center justify-between"
+                      style={{
+                        borderBottom: `1px solid ${B.border}`,
+                        background: "rgba(0,87,255,0.06)",
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Shield
+                          style={{ width: 15, height: 15, color: B.cyan }}
+                        />
+                        <p className="text-sm font-black text-white">
+                          Your Admin Team
+                        </p>
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+                          style={{ background: `${B.cyan}15`, color: B.cyan }}
+                        >
+                          {
+                            subAdmins.filter((a) => a.status === "online")
+                              .length
+                          }{" "}
+                          online
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("users")}
+                        className="text-[10px] font-bold flex items-center gap-1 hover:text-white transition-colors"
+                        style={{ color: B.cyan }}
+                      >
+                        View All{" "}
+                        <ChevronRight style={{ width: 11, height: 11 }} />
+                      </button>
+                    </div>
+                    <div className="divide-y" style={{ borderColor: B.border }}>
+                      {subAdmins.slice(0, 3).map((a) => (
+                        <div
+                          key={a.id}
+                          className="px-5 py-3 flex items-center gap-4 hover:bg-white/2 transition-colors"
+                        >
+                          <div className="relative">
+                            <div
+                              className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white"
+                              style={{
+                                background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
+                              }}
+                            >
+                              {a.name.charAt(0)}
+                            </div>
+                            <span
+                              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#050E2B] ${a.status === "online" ? "bg-emerald-400" : a.status === "away" ? "bg-amber-400" : "bg-slate-500"}`}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-white truncate">
+                              {a.name}
+                            </p>
+                            <p
+                              className="text-[10px] truncate"
+                              style={{ color: "rgba(255,255,255,0.35)" }}
+                            >
+                              {a.region}
+                            </p>
+                          </div>
+                          <div className="flex gap-4 text-[10px] text-center">
+                            <div>
+                              <p className="font-black text-amber-400">
+                                {a.pending}
+                              </p>
+                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
+                                Pending
+                              </p>
+                            </div>
+                            <div>
+                              <p
+                                className="font-black"
+                                style={{ color: B.cyan }}
+                              >
+                                {a.approved}
+                              </p>
+                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
+                                Done
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[9px] font-black px-2 py-0.5 rounded-full capitalize ${a.status === "online" ? "bg-emerald-500/15 text-emerald-400" : a.status === "away" ? "bg-amber-500/15 text-amber-400" : "bg-slate-500/15 text-slate-400"}`}
+                          >
+                            {a.status}
                           </span>
                         </div>
-                        <h4 className="text-slate-500 font-bold text-sm mb-1">{stat.title}</h4>
-                        <span className="text-3xl font-black text-slate-900">{stat.value}</span>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: B.surface,
+                      border: `1px solid ${B.border}`,
+                    }}
+                  >
+                    <div
+                      className="px-5 py-3.5 flex justify-between items-center"
+                      style={{
+                        borderBottom: `1px solid ${B.border}`,
+                        background: "rgba(139,92,246,0.07)",
+                      }}
+                    >
+                      <p className="text-sm font-black text-white">
+                        Platform At a Glance
+                      </p>
+                      <span
+                        className="text-[9px] font-bold px-2 py-0.5 rounded-full"
+                        style={{
+                          background: "rgba(139,92,246,0.15)",
+                          color: "#a78bfa",
+                        }}
+                      >
+                        Admin View
+                      </span>
+                    </div>
+                    <div className="p-5 grid grid-cols-3 gap-4">
+                      {[
+                        {
+                          label: "Pending Courses",
+                          val: String(pending.length),
+                          glow: "#f59e0b",
+                        },
+                        {
+                          label: "Total Users",
+                          val: String(users.length),
+                          glow: B.cyan,
+                        },
+                        {
+                          label: "All Courses",
+                          val: String(allCourses.length),
+                          glow: "#10b981",
+                        },
+                      ].map((s, i) => (
+                        <div
+                          key={i}
+                          className="text-center p-4 rounded-xl"
+                          style={{
+                            background: `${s.glow}08`,
+                            border: `1px solid ${s.glow}20`,
+                          }}
+                        >
+                          <p
+                            className="text-2xl font-black"
+                            style={{ color: s.glow }}
+                          >
+                            {s.val}
+                          </p>
+                          <p
+                            className="text-[10px] font-medium mt-0.5"
+                            style={{ color: "rgba(255,255,255,0.35)" }}
+                          >
+                            {s.label}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Recent transactions */}
+                {transactions.length > 0 && (
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: B.surface,
+                      border: `1px solid ${B.border}`,
+                    }}
+                  >
+                    <div
+                      className="px-5 py-3.5 flex justify-between items-center"
+                      style={{ borderBottom: `1px solid ${B.border}` }}
+                    >
+                      <p className="text-sm font-black text-white">
+                        Recent Transactions
+                      </p>
+                      {isSuperAdmin && (
+                        <button
+                          onClick={() => setActiveTab("finance")}
+                          className="text-[10px] font-bold flex items-center gap-1 hover:text-white transition-colors"
+                          style={{ color: B.cyan }}
+                        >
+                          All <ChevronRight style={{ width: 11, height: 11 }} />
+                        </button>
+                      )}
+                    </div>
+                    <div className="divide-y" style={{ borderColor: B.border }}>
+                      {transactions.slice(0, 3).map((t, i) => (
+                        <div
+                          key={i}
+                          className="px-5 py-3 flex items-center gap-3 hover:bg-white/2 transition-colors"
+                        >
+                          <div
+                            className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                            style={{
+                              background: t.amount.startsWith("-")
+                                ? "rgba(239,68,68,0.12)"
+                                : "rgba(16,185,129,0.12)",
+                            }}
+                          >
+                            <DollarSign
+                              style={{
+                                width: 12,
+                                height: 12,
+                                color: t.amount.startsWith("-")
+                                  ? "#f87171"
+                                  : "#34d399",
+                              }}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-white truncate">
+                              {t.item}
+                            </p>
+                            <p
+                              className="text-[10px]"
+                              style={{ color: "rgba(255,255,255,0.3)" }}
+                            >
+                              {t.user} · {t.date}
+                            </p>
+                          </div>
+                          <p
+                            className={`text-xs font-black shrink-0 ${t.amount.startsWith("-") ? "text-rose-400" : "text-emerald-400"}`}
+                          >
+                            {t.amount}
+                          </p>
+                          <span
+                            className={`text-[9px] font-black px-2 py-0.5 rounded-full ${t.status === "Completed" ? "bg-emerald-500/15 text-emerald-400" : "bg-blue-500/15 text-blue-400"}`}
+                          >
+                            {t.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ════════════════════════════════════════
+                ALL COURSES — both roles view for free
+            ════════════════════════════════════════ */}
+            {activeTab === "courses" && (
+              <motion.div
+                key="courses"
+                variants={pV}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+                className="space-y-5"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-black text-white">
+                      All Platform Courses
+                    </h3>
+                    <p
+                      className="text-[11px] mt-0.5"
+                      style={{ color: "rgba(255,255,255,0.35)" }}
+                    >
+                      {isSuperAdmin
+                        ? "Super admin access — view all content without purchasing"
+                        : "Admin access — view all courses for moderation"}
+                    </p>
+                  </div>
+                  <span
+                    className="text-[10px] font-bold px-3 py-1.5 rounded-xl flex items-center gap-1.5"
+                    style={{
+                      background: `${B.cyan}15`,
+                      color: B.cyan,
+                      border: `1px solid ${B.cyan}25`,
+                    }}
+                  >
+                    <Unlock style={{ width: 12, height: 12 }} /> Free Access ·{" "}
+                    {allCourses.length} courses
+                  </span>
+                </div>
+
+                {loading ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {Array(6)
+                      .fill(0)
+                      .map((_, i) => (
+                        <div
+                          key={i}
+                          className="rounded-2xl animate-pulse"
+                          style={{
+                            background: B.surface,
+                            border: `1px solid ${B.border}`,
+                            height: 210,
+                          }}
+                        />
+                      ))}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {allCourses.map((c, i) => (
+                      <motion.div
+                        key={c.id || i}
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                        whileHover={{ y: -3 }}
+                        className="rounded-2xl overflow-hidden relative group"
+                        style={{
+                          background: B.surface,
+                          border: `1px solid ${B.border}`,
+                        }}
+                      >
+                        <div className="relative h-36 overflow-hidden">
+                          {c.img ? (
+                            <img
+                              src={c.img}
+                              alt={c.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                          ) : (
+                            <div
+                              className="w-full h-full flex items-center justify-center"
+                              style={{
+                                background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
+                              }}
+                            >
+                              <BookOpen
+                                style={{
+                                  width: 32,
+                                  height: 32,
+                                  color: "rgba(255,255,255,0.3)",
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              background:
+                                "linear-gradient(to bottom,transparent 40%,rgba(5,14,43,0.95) 100%)",
+                            }}
+                          />
+                          <div
+                            className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-lg"
+                            style={{
+                              background: "rgba(0,194,255,0.2)",
+                              backdropFilter: "blur(8px)",
+                              border: "1px solid rgba(0,194,255,0.3)",
+                            }}
+                          >
+                            <Unlock
+                              style={{ width: 10, height: 10, color: B.cyan }}
+                            />
+                            <span
+                              className="text-[9px] font-black uppercase tracking-wider"
+                              style={{ color: B.cyan }}
+                            >
+                              Free Access
+                            </span>
+                          </div>
+                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center"
+                              style={{ background: "rgba(0,87,255,0.8)" }}
+                            >
+                              <Play
+                                style={{
+                                  width: 16,
+                                  height: 16,
+                                  color: "white",
+                                  marginLeft: 2,
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                        <div className="p-4">
+                          <h4 className="text-xs font-bold text-white leading-snug line-clamp-2 mb-1">
+                            {c.title}
+                          </h4>
+                          <p
+                            className="text-[10px] mb-2.5"
+                            style={{ color: "rgba(255,255,255,0.35)" }}
+                          >
+                            {c.author || "Surabhi Dewra"}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
+                              <Star
+                                style={{
+                                  width: 11,
+                                  height: 11,
+                                  fill: "#f59e0b",
+                                  color: "#f59e0b",
+                                }}
+                              />
+                              {c.rating || "4.8"}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-black text-white">
+                                {c.price}
+                              </span>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                onClick={() => setPreviewCourse(c)}
+                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold"
+                                style={{
+                                  background: `${B.primary}25`,
+                                  color: B.cyan,
+                                  border: `1px solid ${B.primary}35`,
+                                }}
+                              >
+                                Preview
+                              </motion.button>
+                            </div>
+                          </div>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
+                )}
 
-                  {/* Recent transactions */}
-                  <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                      <h3 className="text-lg font-extrabold text-slate-900">Recent Transactions</h3>
-                      <button onClick={() => setActiveTab("finance")} className="text-xs font-bold text-purple-600 hover:text-purple-800 transition-colors">View All</button>
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                        <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-widest font-black border-b border-slate-200">
-                          <tr>
-                            <th className="px-6 py-4">Transaction ID</th>
-                            <th className="px-6 py-4">User</th>
-                            <th className="px-6 py-4">Item</th>
-                            <th className="px-6 py-4">Amount</th>
-                            <th className="px-6 py-4">Status</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {transactions.map((t, i) => (
-                            <tr key={i} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="px-6 py-4 text-xs font-black text-slate-500">{t.id}</td>
-                              <td className="px-6 py-4 text-sm font-bold text-slate-900">{t.user}</td>
-                              <td className="px-6 py-4 text-sm font-medium text-slate-600">{t.item}</td>
-                              <td className={`px-6 py-4 text-sm font-black ${t.amount.startsWith("-") ? "text-rose-600" : "text-emerald-600"}`}>{t.amount}</td>
-                              <td className="px-6 py-4">
-                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.status === "Completed" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`}>
-                                  {t.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ── USERS ── */}
-              {activeTab === "users" && (
-                <motion.div key="users" variants={pageV} initial="initial" animate="in" exit="out" transition={{ duration: 0.3 }}>
-                  <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                      <div>
-                        <h3 className="text-xl font-extrabold text-slate-900">Platform Users</h3>
-                        <p className="text-sm text-slate-500 font-medium mt-0.5">Manage learners, tutors, and admins</p>
-                      </div>
-                      {loadingUsers && <Loader2 className="w-5 h-5 animate-spin text-purple-600" />}
-                    </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                        <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-widest font-black border-b border-slate-200">
-                          <tr>
-                            <th className="px-6 py-4">User Details</th>
-                            <th className="px-6 py-4">Role</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Joined</th>
-                            <th className="px-6 py-4">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {users.map(user => (
-                            <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-xs font-black shrink-0">
-                                    {user.name.charAt(0)}
-                                  </div>
-                                  <div>
-                                    <p className="font-bold text-slate-900 text-sm">{user.name}</p>
-                                    <p className="text-xs text-slate-500">{user.email}</p>
-                                  </div>
-                                </div>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                  user.role === "Tutor" ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
-                                }`}>{user.role}</span>
-                              </td>
-                              <td className="px-6 py-4">
-                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                  user.status === "Active" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
-                                }`}>{user.status}</span>
-                              </td>
-                              <td className="px-6 py-4 text-sm text-slate-500 font-medium">{user.joined}</td>
-                              <td className="px-6 py-4">
-                                <div className="flex items-center gap-2">
-                                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-blue-50 transition-colors">
-                                    <Eye className="w-4 h-4 text-blue-500" />
-                                  </motion.button>
-                                  <motion.button whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}
-                                    className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-rose-50 transition-colors">
-                                    <Ban className="w-4 h-4 text-rose-400" />
-                                  </motion.button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* ── MODERATION ── */}
-              {activeTab === "moderation" && (
-                <motion.div key="moderation" variants={pageV} initial="initial" animate="in" exit="out" transition={{ duration: 0.3 }}>
-                  {!reviewingCourse ? (
-                    <>
-                      <div className="mb-6 flex justify-between items-end">
-                        <div>
-                          <h3 className="text-2xl font-extrabold text-slate-900">Moderation Queue</h3>
-                          <p className="text-sm text-slate-500 font-medium mt-1">Review courses submitted by Tutors before they go live.</p>
+                {/* Quick preview modal */}
+                <AnimatePresence>
+                  {previewCourse && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+                      style={{
+                        background: "rgba(2,5,15,0.85)",
+                        backdropFilter: "blur(12px)",
+                      }}
+                      onClick={() => setPreviewCourse(null)}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.95 }}
+                        className="w-full max-w-2xl rounded-2xl overflow-hidden"
+                        style={{
+                          background: "#050E2B",
+                          border: "1px solid rgba(0,194,255,0.25)",
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="aspect-video bg-black">
+                          {previewCourse.vid ? (
+                            <iframe
+                              src={`https://www.youtube.com/embed/${previewCourse.vid}?autoplay=1&rel=0`}
+                              className="w-full h-full"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Play
+                                style={{
+                                  width: 48,
+                                  height: 48,
+                                  color: "rgba(255,255,255,0.15)",
+                                }}
+                              />
+                            </div>
+                          )}
                         </div>
-                        {loadingPending
-                          ? <Loader2 className="w-5 h-5 animate-spin text-purple-600" />
-                          : <button onClick={() => { setLoadingPending(true); AdminService.getPendingCourses().then(r => { setPending(r.data); setLoadingPending(false); }); }}
-                              className="flex items-center gap-2 text-sm font-bold text-purple-600 hover:text-purple-800 transition-colors">
-                              <RefreshCw className="w-4 h-4" /> Refresh
-                            </button>}
-                      </div>
-
-                      {pending.length === 0 && !loadingPending ? (
-                        <div className="flex flex-col items-center py-20 text-center">
-                          <CheckCircle className="w-14 h-14 text-emerald-400 mb-4" />
-                          <h3 className="text-xl font-bold text-slate-700">Queue is clear!</h3>
-                          <p className="text-slate-500 font-medium mt-1">No courses pending review right now.</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                          <AnimatePresence>
-                            {pending.map(course => (
-                              <motion.div key={course.id}
-                                initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
-                                className="bg-white border border-slate-200 rounded-[1.5rem] overflow-hidden shadow-md hover:shadow-lg transition-shadow flex flex-col">
-                                <div className="p-6 flex-1 flex flex-col">
-                                  <div className="flex items-center gap-2 mb-3">
-                                    <span className="bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">Pending Review</span>
-                                    <span className="text-[10px] text-slate-400 font-medium ml-auto flex items-center gap-1"><Clock className="w-3 h-3" />{course.submitted}</span>
-                                  </div>
-                                  <h4 className="font-extrabold text-slate-900 text-base leading-snug mb-2">{course.title}</h4>
-                                  <p className="text-sm text-slate-600 font-medium line-clamp-2 mb-4">{course.description}</p>
-                                  <div className="space-y-1.5 mb-5 border-t border-slate-100 pt-4">
-                                    {[["Tutor", course.instructor],["Price", course.price],["Length", course.length]].map(([k,v]) => (
-                                      <p key={k} className="text-xs font-bold text-slate-500 flex justify-between">
-                                        <span>{k}:</span><span className="text-slate-900">{v}</span>
-                                      </p>
-                                    ))}
-                                    <p className="text-xs font-bold text-slate-500 flex justify-between">
-                                      <span>Videos:</span><span className="text-slate-900">{course.curriculum.length} lesson{course.curriculum.length !== 1 ? "s" : ""}</span>
-                                    </p>
-                                  </div>
-                                  <div className="mt-auto flex gap-2">
-                                    <button onClick={() => handleReview(course)}
-                                      className="flex-1 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white border border-blue-200 hover:border-blue-600 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center justify-center gap-2">
-                                      <PlayCircle className="w-4 h-4" /> Review
-                                    </button>
-                                    <button onClick={async () => { setActioning(course.id); await AdminService.moderateCourse(course.id,"rejected"); setPending(p => p.filter(c => c.id !== course.id)); setActioning(null); toast.success("Course rejected", { style: toastOK }); }}
-                                      disabled={actioning === course.id}
-                                      className="w-10 h-10 rounded-xl border border-rose-200 hover:bg-rose-50 flex items-center justify-center transition-all disabled:opacity-50">
-                                      {actioning === course.id ? <Loader2 className="w-4 h-4 animate-spin text-rose-400" /> : <XCircle className="w-4 h-4 text-rose-400" />}
-                                    </button>
-                                  </div>
-                                </div>
-                              </motion.div>
-                            ))}
-                          </AnimatePresence>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    /* ── Detailed review view ── */
-                    <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-                      className="bg-white rounded-[2rem] shadow-xl border border-slate-200 overflow-hidden">
-                      {/* Header */}
-                      <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                          <button onClick={() => setReviewingCourse(null)}
-                            className="p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors">
-                            <ArrowLeft className="w-5 h-5" />
-                          </button>
+                        <div className="p-5 flex items-center justify-between">
                           <div>
-                            <h3 className="text-lg font-black">{reviewingCourse.title}</h3>
-                            <p className="text-sm text-slate-400 font-medium">
-                              {reviewingCourse.instructor} · {reviewingCourse.price} · {reviewingCourse.length}
+                            <h3 className="text-sm font-black text-white">
+                              {previewCourse.title}
+                            </h3>
+                            <p
+                              className="text-xs mt-0.5"
+                              style={{ color: "rgba(255,255,255,0.4)" }}
+                            >
+                              {previewCourse.author} · {previewCourse.price}
                             </p>
                           </div>
+                          <button
+                            onClick={() => setPreviewCourse(null)}
+                            className="w-8 h-8 rounded-xl flex items-center justify-center"
+                            style={{
+                              background: B.surface,
+                              border: `1px solid ${B.border}`,
+                            }}
+                          >
+                            <XCircle
+                              style={{
+                                width: 16,
+                                height: 16,
+                                color: "rgba(255,255,255,0.5)",
+                              }}
+                            />
+                          </button>
                         </div>
-                        <span className="bg-amber-500/20 text-amber-400 border border-amber-500/50 px-3 py-1.5 rounded-full text-xs font-bold flex items-center gap-2">
-                          <AlertTriangle className="w-4 h-4" /> Moderation Active
-                        </span>
-                      </div>
-
-                      {/* Content split */}
-                      <div className="flex flex-col lg:flex-row" style={{ height: 580 }}>
-                        {/* Video player */}
-                        <div className="w-full lg:w-[65%] bg-black flex flex-col border-r border-slate-200">
-                          <div className="flex-1 relative">
-                            <iframe src={activeVideo} className="absolute inset-0 w-full h-full" allowFullScreen />
-                          </div>
-                        </div>
-
-                        {/* Moderation panel */}
-                        <div className="w-full lg:w-[35%] bg-slate-50 flex flex-col overflow-hidden">
-                          {/* Curriculum */}
-                          <div className="p-5 border-b border-slate-200 flex-1 overflow-y-auto hide-scrollbar">
-                            <h4 className="font-extrabold text-slate-900 mb-3 text-sm flex items-center gap-2">
-                              <BarChart3 className="w-4 h-4 text-blue-500" /> Course Content
-                            </h4>
-                            <div className="space-y-2">
-                              {reviewingCourse.curriculum.map((lesson, idx) => (
-                                <motion.button key={idx} whileHover={{ x: 2 }}
-                                  onClick={() => setActiveVideo(lesson.video)}
-                                  className={`w-full text-left p-3 rounded-xl border flex justify-between items-center transition-all ${
-                                    activeVideo === lesson.video
-                                      ? "bg-blue-600 border-blue-600 text-white shadow-md"
-                                      : "bg-white border-slate-200 text-slate-700 hover:border-blue-300"
-                                  }`}>
-                                  <span className="text-xs font-bold truncate pr-3 flex items-center gap-2">
-                                    <PlayCircle className="w-3.5 h-3.5 shrink-0" /> {lesson.title}
-                                  </span>
-                                  <span className={`text-[10px] font-black shrink-0 ${activeVideo === lesson.video ? "text-blue-200" : "text-slate-400"}`}>
-                                    {lesson.duration}
-                                  </span>
-                                </motion.button>
-                              ))}
-                            </div>
-                          </div>
-
-                          {/* Checklist + actions */}
-                          <div className="p-5 bg-white shadow-[0_-10px_20px_rgba(0,0,0,0.02)]">
-                            <h4 className="font-extrabold text-slate-900 mb-3 text-xs uppercase tracking-widest flex items-center gap-2">
-                              <CheckSquare className="w-4 h-4 text-purple-600" /> Safety Checklist
-                            </h4>
-                            <div className="space-y-2 mb-5">
-                              {[
-                                ["copyright", "No Copyright Infringement detected"],
-                                ["content",   "No 18+ or inappropriate content"],
-                                ["quality",   "Audio & Video quality meets standards"],
-                              ].map(([key, label]) => (
-                                <label key={key} className="flex items-center gap-3 text-xs font-bold text-slate-600 cursor-pointer group">
-                                  <input type="checkbox" checked={checklist[key]}
-                                    onChange={e => setChecklist(p => ({ ...p, [key]: e.target.checked }))}
-                                    className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500" />
-                                  <span className="group-hover:text-slate-900 transition-colors">{label}</span>
-                                </label>
-                              ))}
-                            </div>
-                            <div className="flex gap-2">
-                              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                                onClick={() => handleModerate("approved")} disabled={!!actioning}
-                                className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-emerald-600/20 disabled:opacity-60">
-                                {actioning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <CheckCircle className="w-3.5 h-3.5" />} Approve
-                              </motion.button>
-                              <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}
-                                onClick={() => handleModerate("rejected")} disabled={!!actioning}
-                                className="flex-1 bg-white hover:bg-rose-50 border-2 border-rose-200 hover:border-rose-500 text-rose-600 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 disabled:opacity-60">
-                                {actioning ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <XCircle className="w-3.5 h-3.5" />} Reject
-                              </motion.button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      </motion.div>
                     </motion.div>
                   )}
-                </motion.div>
-              )}
+                </AnimatePresence>
+              </motion.div>
+            )}
 
-              {/* ── FINANCE ── */}
-              {activeTab === "finance" && (
-                <motion.div key="finance" variants={pageV} initial="initial" animate="in" exit="out" transition={{ duration: 0.3 }} className="space-y-6">
-                  <div className="bg-white border border-slate-100 rounded-[2rem] overflow-hidden shadow-sm">
-                    <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+            {/* ════════════════════════════════════════
+                MODERATION / FINAL APPROVAL
+                admin     → "moderation" tab (pre-vets)
+                superadmin → "moderation" (sub-admin view) + "approval" (final gate)
+            ════════════════════════════════════════ */}
+            {(activeTab === "moderation" || activeTab === "approval") && (
+              <motion.div
+                key={activeTab}
+                variants={pV}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+              >
+                {!reviewingCourse ? (
+                  <div className="space-y-5">
+                    <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-xl font-extrabold text-slate-900">Financial Reports</h3>
-                        <p className="text-sm text-slate-500 font-medium mt-0.5">All platform revenue and tutor payouts</p>
+                        <h3 className="text-base font-black text-white">
+                          {activeTab === "approval"
+                            ? "Final Approval Gate"
+                            : "Moderation Queue"}
+                        </h3>
+                        <p
+                          className="text-[11px] mt-0.5"
+                          style={{ color: "rgba(255,255,255,0.35)" }}
+                        >
+                          {activeTab === "approval"
+                            ? "Pre-vetted by sub-admins — your final sign-off makes it live"
+                            : isSuperAdmin
+                              ? "Sub-admin review before Final Approval queue"
+                              : "Review and pre-approve — Super Admin gives final sign-off"}
+                        </p>
                       </div>
-                      <button className="flex items-center gap-2 text-sm font-bold text-purple-600 hover:text-purple-800 transition-colors">
-                        <Download className="w-4 h-4" /> Export CSV
+                      <button
+                        onClick={async () => {
+                          const r = await AdminService.getPendingCourses();
+                          setPending(r.data);
+                        }}
+                        className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all"
+                        style={{
+                          color: B.cyan,
+                          border: `1px solid ${B.border}`,
+                        }}
+                      >
+                        <RefreshCw style={{ width: 13, height: 13 }} /> Refresh
                       </button>
                     </div>
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left">
-                        <thead className="bg-slate-50 text-slate-500 text-xs uppercase tracking-widest font-black border-b border-slate-200">
-                          <tr>
-                            {["Transaction ID","User","Item","Amount","Date","Status"].map(h => (
-                              <th key={h} className="px-6 py-4">{h}</th>
-                            ))}
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {transactions.map((t, i) => (
-                            <tr key={i} className="hover:bg-slate-50/80 transition-colors">
-                              <td className="px-6 py-4 text-xs font-black text-slate-500">{t.id}</td>
-                              <td className="px-6 py-4 text-sm font-bold text-slate-900">{t.user}</td>
-                              <td className="px-6 py-4 text-sm font-medium text-slate-600">{t.item}</td>
-                              <td className={`px-6 py-4 text-sm font-black ${t.amount.startsWith("-") ? "text-rose-600" : "text-emerald-600"}`}>{t.amount}</td>
-                              <td className="px-6 py-4 text-sm text-slate-500 font-medium">{t.date}</td>
-                              <td className="px-6 py-4">
-                                <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${t.status === "Completed" ? "bg-emerald-100 text-emerald-700" : "bg-blue-100 text-blue-700"}`}>
-                                  {t.status}
-                                </span>
-                              </td>
-                            </tr>
+
+                    {/* Info banner */}
+                    <div
+                      className="rounded-2xl px-5 py-3 flex items-center gap-3"
+                      style={{
+                        background:
+                          activeTab === "approval"
+                            ? "rgba(220,38,38,0.07)"
+                            : "rgba(245,158,11,0.07)",
+                        border: `1px solid ${activeTab === "approval" ? "rgba(220,38,38,0.25)" : "rgba(245,158,11,0.25)"}`,
+                      }}
+                    >
+                      <AlertTriangle
+                        style={{
+                          width: 15,
+                          height: 15,
+                          flexShrink: 0,
+                          color:
+                            activeTab === "approval" ? "#f87171" : "#f59e0b",
+                        }}
+                      />
+                      <p
+                        className="text-xs font-medium"
+                        style={{ color: "rgba(255,255,255,0.55)" }}
+                      >
+                        {activeTab === "approval"
+                          ? "Super Admin Final Gate: Complete the 4-item checklist before approving. This action publishes the course immediately."
+                          : isSuperAdmin
+                            ? "Oversight view: Sub-admins pre-vet content. Approved here goes to your Final Approval queue."
+                            : "Admin Pre-vetting: Verify content quality. Approved courses are forwarded to Super Admin for final sign-off."}
+                      </p>
+                    </div>
+
+                    {pending.length === 0 ? (
+                      <div
+                        className="flex flex-col items-center py-20 text-center rounded-2xl"
+                        style={{
+                          background: B.surface,
+                          border: `1px solid ${B.border}`,
+                        }}
+                      >
+                        <div
+                          className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4"
+                          style={{
+                            background: "rgba(16,185,129,0.12)",
+                            border: "1px solid rgba(16,185,129,0.25)",
+                          }}
+                        >
+                          <CheckCircle
+                            style={{ width: 28, height: 28, color: "#34d399" }}
+                          />
+                        </div>
+                        <p className="font-bold text-white text-sm">
+                          Queue is clear!
+                        </p>
+                        <p
+                          className="text-[11px] mt-1"
+                          style={{ color: "rgba(255,255,255,0.35)" }}
+                        >
+                          No courses pending review.
+                        </p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <AnimatePresence>
+                          {pending.map((course) => (
+                            <motion.div
+                              key={course.id}
+                              initial={{ opacity: 0, scale: 0.95 }}
+                              animate={{ opacity: 1, scale: 1 }}
+                              exit={{ opacity: 0, scale: 0.9 }}
+                              whileHover={{ y: -3 }}
+                              className="rounded-2xl overflow-hidden flex flex-col"
+                              style={{
+                                background: B.surface,
+                                border: `1px solid ${B.border}`,
+                              }}
+                            >
+                              <div className="p-5 flex-1 flex flex-col">
+                                <div className="flex items-center gap-2 mb-3">
+                                  <span
+                                    className="text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full"
+                                    style={{
+                                      background: "rgba(245,158,11,0.15)",
+                                      color: "#f59e0b",
+                                      border: "1px solid rgba(245,158,11,0.3)",
+                                    }}
+                                  >
+                                    {activeTab === "approval"
+                                      ? "Awaiting Final Approval"
+                                      : "Pending Review"}
+                                  </span>
+                                  <span
+                                    className="text-[9px] ml-auto flex items-center gap-1"
+                                    style={{ color: "rgba(255,255,255,0.3)" }}
+                                  >
+                                    <Clock style={{ width: 9, height: 9 }} />
+                                    {course.submitted}
+                                  </span>
+                                </div>
+                                <h4 className="text-sm font-bold text-white leading-snug mb-1.5">
+                                  {course.title}
+                                </h4>
+                                <p
+                                  className="text-[11px] line-clamp-2 mb-3"
+                                  style={{ color: "rgba(255,255,255,0.4)" }}
+                                >
+                                  {course.description}
+                                </p>
+                                <div
+                                  className="space-y-1 mb-3 pt-3"
+                                  style={{ borderTop: `1px solid ${B.border}` }}
+                                >
+                                  {[
+                                    ["Tutor", course.instructor],
+                                    ["Price", course.price],
+                                    ["Length", course.length],
+                                  ].map(([k, v]) => (
+                                    <div
+                                      key={k}
+                                      className="flex justify-between"
+                                    >
+                                      <span
+                                        className="text-[10px] font-bold"
+                                        style={{
+                                          color: "rgba(255,255,255,0.3)",
+                                        }}
+                                      >
+                                        {k}
+                                      </span>
+                                      <span className="text-[10px] font-black text-white">
+                                        {v}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {activeTab === "approval" && (
+                                  <div
+                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl mb-3"
+                                    style={{
+                                      background: "rgba(16,185,129,0.07)",
+                                      border: "1px solid rgba(16,185,129,0.2)",
+                                    }}
+                                  >
+                                    <CheckCircle
+                                      style={{
+                                        width: 12,
+                                        height: 12,
+                                        color: "#34d399",
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                    <span className="text-[10px] font-bold text-emerald-400">
+                                      Pre-verified by sub-admin
+                                    </span>
+                                  </div>
+                                )}
+                                <div className="mt-auto flex gap-2">
+                                  <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.97 }}
+                                    onClick={() => {
+                                      setReviewingCourse(course);
+                                      setActiveVideo(
+                                        course.curriculum[0].video,
+                                      );
+                                      setChecklist({
+                                        copyright: false,
+                                        content: false,
+                                        quality: false,
+                                        originality: false,
+                                      });
+                                    }}
+                                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-xs font-bold"
+                                    style={{
+                                      background: `${B.primary}22`,
+                                      color: B.cyan,
+                                      border: `1px solid ${B.primary}35`,
+                                    }}
+                                  >
+                                    <PlayCircle
+                                      style={{ width: 14, height: 14 }}
+                                    />{" "}
+                                    Review
+                                  </motion.button>
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    onClick={async () => {
+                                      setActioning(course.id);
+                                      await AdminService.moderateCourse(
+                                        course.id,
+                                        "rejected",
+                                      );
+                                      setPending((p) =>
+                                        p.filter((c) => c.id !== course.id),
+                                      );
+                                      setActioning(null);
+                                      toast.success("Course rejected", {
+                                        style: toastOK,
+                                      });
+                                    }}
+                                    disabled={actioning === course.id}
+                                    className="w-10 h-10 rounded-xl flex items-center justify-center disabled:opacity-50 hover:bg-rose-500/10 transition-all"
+                                    style={{
+                                      border: "1px solid rgba(239,68,68,0.3)",
+                                    }}
+                                  >
+                                    {actioning === course.id ? (
+                                      <Loader2
+                                        style={{ width: 14, height: 14 }}
+                                        className="animate-spin text-rose-400"
+                                      />
+                                    ) : (
+                                      <XCircle
+                                        style={{
+                                          width: 14,
+                                          height: 14,
+                                          color: "#f87171",
+                                        }}
+                                      />
+                                    )}
+                                  </motion.button>
+                                </div>
+                              </div>
+                            </motion.div>
                           ))}
-                        </tbody>
-                      </table>
+                        </AnimatePresence>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  /* ── Detailed video review ── */
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="rounded-2xl overflow-hidden"
+                    style={{ border: `1px solid ${B.border}` }}
+                  >
+                    {/* Review header */}
+                    <div
+                      className="px-5 py-4 flex items-center justify-between"
+                      style={{
+                        background:
+                          "linear-gradient(135deg,rgba(0,87,255,0.2),rgba(0,194,255,0.08))",
+                        borderBottom: `1px solid ${B.border}`,
+                      }}
+                    >
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setReviewingCourse(null)}
+                          className="p-1.5 rounded-xl hover:bg-white/10 transition-all"
+                          style={{ border: `1px solid ${B.border}` }}
+                        >
+                          <ArrowLeft
+                            style={{ width: 16, height: 16, color: "white" }}
+                          />
+                        </button>
+                        <div>
+                          <h3 className="text-sm font-black text-white">
+                            {reviewingCourse.title}
+                          </h3>
+                          <p
+                            className="text-[11px]"
+                            style={{ color: "rgba(255,255,255,0.4)" }}
+                          >
+                            {reviewingCourse.instructor} ·{" "}
+                            {reviewingCourse.price} · {reviewingCourse.length}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black"
+                        style={{
+                          background: "rgba(245,158,11,0.15)",
+                          color: "#f59e0b",
+                          border: "1px solid rgba(245,158,11,0.3)",
+                        }}
+                      >
+                        <AlertTriangle style={{ width: 12, height: 12 }} />
+                        {activeTab === "approval"
+                          ? "Final Review Mode"
+                          : "Moderation Active"}
+                      </span>
+                    </div>
+
+                    {/* Content split */}
+                    <div
+                      className="flex flex-col lg:flex-row"
+                      style={{ height: 560 }}
+                    >
+                      {/* Video player */}
+                      <div className="flex-1 bg-black relative">
+                        <AnimatePresence mode="wait">
+                          <motion.div
+                            key={activeVideo}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            className="absolute inset-0"
+                          >
+                            <iframe
+                              src={activeVideo}
+                              className="w-full h-full"
+                              allowFullScreen
+                            />
+                          </motion.div>
+                        </AnimatePresence>
+                      </div>
+
+                      {/* Moderation panel */}
+                      <div
+                        className="w-full lg:w-[300px] flex flex-col shrink-0"
+                        style={{
+                          background: "rgba(5,14,43,0.95)",
+                          borderLeft: `1px solid ${B.border}`,
+                        }}
+                      >
+                        {/* Lesson list */}
+                        <div
+                          className="p-4 flex-1 overflow-y-auto hide-scrollbar"
+                          style={{ borderBottom: `1px solid ${B.border}` }}
+                        >
+                          <p
+                            className="text-[10px] font-black uppercase tracking-wider mb-3"
+                            style={{ color: "rgba(255,255,255,0.3)" }}
+                          >
+                            Course Lessons
+                          </p>
+                          <div className="space-y-1.5">
+                            {reviewingCourse.curriculum.map((lesson, idx) => {
+                              const isAct = activeVideo === lesson.video;
+                              return (
+                                <motion.button
+                                  key={idx}
+                                  whileHover={{ x: 2 }}
+                                  onClick={() => setActiveVideo(lesson.video)}
+                                  className="w-full text-left p-2.5 rounded-xl flex items-center gap-2.5 transition-all"
+                                  style={{
+                                    background: isAct
+                                      ? `${B.primary}35`
+                                      : B.surface,
+                                    border: `1px solid ${isAct ? `${B.cyan}50` : B.border}`,
+                                  }}
+                                >
+                                  <div
+                                    className="w-5 h-5 rounded-lg flex items-center justify-center shrink-0"
+                                    style={{
+                                      background: isAct
+                                        ? B.cyan
+                                        : "rgba(255,255,255,0.05)",
+                                    }}
+                                  >
+                                    <PlayCircle
+                                      style={{
+                                        width: 12,
+                                        height: 12,
+                                        color: isAct
+                                          ? B.dark
+                                          : "rgba(255,255,255,0.3)",
+                                      }}
+                                    />
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p
+                                      className="text-[11px] font-bold truncate"
+                                      style={{
+                                        color: isAct
+                                          ? "white"
+                                          : "rgba(255,255,255,0.45)",
+                                      }}
+                                    >
+                                      {lesson.title}
+                                    </p>
+                                    <p
+                                      className="text-[9px]"
+                                      style={{
+                                        color: "rgba(255,255,255,0.25)",
+                                      }}
+                                    >
+                                      {lesson.duration}
+                                    </p>
+                                  </div>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Safety checklist + actions */}
+                        <div className="p-4">
+                          <p
+                            className="text-[10px] font-black uppercase tracking-wider mb-3 flex items-center gap-1.5"
+                            style={{ color: "rgba(255,255,255,0.3)" }}
+                          >
+                            <CheckSquare
+                              style={{ width: 12, height: 12, color: B.cyan }}
+                            />
+                            {isSuperAdmin
+                              ? "Super Admin Checklist"
+                              : "Safety Checklist"}
+                          </p>
+                          <div className="space-y-2 mb-3">
+                            {[
+                              ["copyright", "No copyright infringement"],
+                              ["content", "Appropriate for all audiences"],
+                              [
+                                "quality",
+                                "Audio & video quality meets standard",
+                              ],
+                              [
+                                "originality",
+                                "Original — no plagiarism detected",
+                              ],
+                            ].map(([k, l]) => (
+                              <label
+                                key={k}
+                                className="flex items-center gap-2.5 cursor-pointer"
+                              >
+                                <div
+                                  className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${checklist[k] ? "border-cyan-500 bg-cyan-500" : "border-white/20 bg-transparent"}`}
+                                  onClick={() =>
+                                    setChecklist((p) => ({ ...p, [k]: !p[k] }))
+                                  }
+                                >
+                                  {checklist[k] && (
+                                    <CheckCircle
+                                      style={{
+                                        width: 10,
+                                        height: 10,
+                                        color: B.dark,
+                                      }}
+                                    />
+                                  )}
+                                </div>
+                                <span
+                                  className="text-[11px] font-medium transition-colors"
+                                  style={{
+                                    color: checklist[k]
+                                      ? "rgba(255,255,255,0.8)"
+                                      : "rgba(255,255,255,0.3)",
+                                  }}
+                                >
+                                  {l}
+                                </span>
+                              </label>
+                            ))}
+                          </div>
+
+                          {/* Progress bar */}
+                          <div className="mb-3">
+                            <div className="flex justify-between text-[10px] font-bold mb-1">
+                              <span style={{ color: "rgba(255,255,255,0.3)" }}>
+                                Checklist
+                              </span>
+                              <span style={{ color: B.cyan }}>
+                                {
+                                  Object.values(checklist).filter(Boolean)
+                                    .length
+                                }
+                                /4
+                              </span>
+                            </div>
+                            <div
+                              className="h-1.5 rounded-full overflow-hidden"
+                              style={{ background: "rgba(255,255,255,0.06)" }}
+                            >
+                              <motion.div
+                                className="h-full rounded-full"
+                                animate={{
+                                  width: `${(Object.values(checklist).filter(Boolean).length / 4) * 100}%`,
+                                }}
+                                style={{
+                                  background: `linear-gradient(90deg,${B.primary},${B.cyan})`,
+                                }}
+                                transition={{ duration: 0.4 }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() =>
+                                moderate(reviewingCourse.id, "approved")
+                              }
+                              disabled={!!actioning}
+                              className="flex-1 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              style={{
+                                background:
+                                  "linear-gradient(135deg,#059669,#10b981)",
+                                color: "white",
+                                boxShadow: "0 4px 16px rgba(16,185,129,0.25)",
+                              }}
+                            >
+                              {actioning ? (
+                                <Loader2
+                                  style={{ width: 14, height: 14 }}
+                                  className="animate-spin"
+                                />
+                              ) : (
+                                <>
+                                  <ShieldCheck
+                                    style={{ width: 14, height: 14 }}
+                                  />
+                                  {activeTab === "approval"
+                                    ? "Final Approve"
+                                    : "Pre-Approve"}
+                                </>
+                              )}
+                            </motion.button>
+                            <motion.button
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.97 }}
+                              onClick={() =>
+                                moderate(reviewingCourse.id, "rejected")
+                              }
+                              disabled={!!actioning}
+                              className="flex-1 py-2.5 rounded-xl text-xs font-black flex items-center justify-center gap-1.5 disabled:opacity-50"
+                              style={{
+                                background: "rgba(239,68,68,0.12)",
+                                color: "#f87171",
+                                border: "1px solid rgba(239,68,68,0.3)",
+                              }}
+                            >
+                              {actioning ? (
+                                <Loader2
+                                  style={{ width: 14, height: 14 }}
+                                  className="animate-spin"
+                                />
+                              ) : (
+                                <>
+                                  <XCircle style={{ width: 14, height: 14 }} />{" "}
+                                  Reject
+                                </>
+                              )}
+                            </motion.button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </motion.div>
+            )}
+
+            {/* ════════════════════════════════════════
+                USERS & ADMINS
+            ════════════════════════════════════════ */}
+            {activeTab === "users" && (
+              <motion.div
+                key="users"
+                variants={pV}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+                className="space-y-5"
+              >
+                {/* Sub-admin team (superadmin only) */}
+                {isSuperAdmin && (
+                  <div
+                    className="rounded-2xl overflow-hidden"
+                    style={{
+                      background: B.surface,
+                      border: `1px solid ${B.border}`,
+                    }}
+                  >
+                    <div
+                      className="px-5 py-4 flex items-center justify-between"
+                      style={{
+                        borderBottom: `1px solid ${B.border}`,
+                        background: "rgba(0,87,255,0.06)",
+                      }}
+                    >
+                      <div className="flex items-center gap-2">
+                        <Shield
+                          style={{ width: 15, height: 15, color: B.cyan }}
+                        />
+                        <p className="text-sm font-black text-white">
+                          Your Admin Team ({subAdmins.length})
+                        </p>
+                      </div>
+                      <p
+                        className="text-[10px] font-bold"
+                        style={{ color: "rgba(255,255,255,0.3)" }}
+                      >
+                        Managed by you · Final authority
+                      </p>
+                    </div>
+                    <div className="divide-y" style={{ borderColor: B.border }}>
+                      {subAdmins.map((a) => (
+                        <motion.div
+                          key={a.id}
+                          whileHover={{
+                            backgroundColor: "rgba(255,255,255,0.02)",
+                          }}
+                          className="px-5 py-3.5 flex items-center gap-4 transition-colors"
+                        >
+                          <div className="relative">
+                            <div
+                              className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black text-white"
+                              style={{
+                                background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
+                              }}
+                            >
+                              {a.name.charAt(0)}
+                            </div>
+                            <span
+                              className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#050E2B] ${a.status === "online" ? "bg-emerald-400" : a.status === "away" ? "bg-amber-400" : "bg-slate-500"}`}
+                            />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-bold text-white">
+                              {a.name}
+                            </p>
+                            <p
+                              className="text-[10px]"
+                              style={{ color: "rgba(255,255,255,0.35)" }}
+                            >
+                              {a.email} · {a.region}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-5 text-center text-[10px]">
+                            <div>
+                              <p className="font-black text-amber-400">
+                                {a.pending}
+                              </p>
+                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
+                                Pending
+                              </p>
+                            </div>
+                            <div>
+                              <p
+                                className="font-black"
+                                style={{ color: B.cyan }}
+                              >
+                                {a.approved}
+                              </p>
+                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
+                                Approved
+                              </p>
+                            </div>
+                          </div>
+                          <span
+                            className={`text-[9px] font-black px-2.5 py-1 rounded-full capitalize ${a.status === "online" ? "bg-emerald-500/15 text-emerald-400" : a.status === "away" ? "bg-amber-500/15 text-amber-400" : "bg-slate-500/15 text-slate-400"}`}
+                          >
+                            {a.status}
+                          </span>
+                          <div className="flex gap-1.5">
+                            <button
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/5 transition-all"
+                              style={{ border: `1px solid ${B.border}` }}
+                            >
+                              <Eye
+                                style={{ width: 13, height: 13, color: B.cyan }}
+                              />
+                            </button>
+                            <button
+                              className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-rose-500/10 transition-all"
+                              style={{ border: `1px solid ${B.border}` }}
+                            >
+                              <Ban
+                                style={{
+                                  width: 13,
+                                  height: 13,
+                                  color: "#f87171",
+                                }}
+                              />
+                            </button>
+                          </div>
+                        </motion.div>
+                      ))}
                     </div>
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                )}
+
+                {/* All platform users */}
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    background: B.surface,
+                    border: `1px solid ${B.border}`,
+                  }}
+                >
+                  <div
+                    className="px-5 py-3.5 flex items-center justify-between"
+                    style={{ borderBottom: `1px solid ${B.border}` }}
+                  >
+                    <p className="text-sm font-black text-white">
+                      Platform Users
+                    </p>
+                    {loading && (
+                      <Loader2
+                        style={{ width: 16, height: 16, color: B.cyan }}
+                        className="animate-spin"
+                      />
+                    )}
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead
+                        style={{
+                          borderBottom: `1px solid ${B.border}`,
+                          background: "rgba(255,255,255,0.015)",
+                        }}
+                      >
+                        <tr>
+                          {["User", "Role", "Status", "Joined", "Actions"].map(
+                            (h) => (
+                              <th
+                                key={h}
+                                className="px-5 py-3 text-[10px] font-black uppercase tracking-wider"
+                                style={{ color: "rgba(255,255,255,0.2)" }}
+                              >
+                                {h}
+                              </th>
+                            ),
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {users.map((u) => (
+                          <motion.tr
+                            key={u.id}
+                            whileHover={{
+                              backgroundColor: "rgba(255,255,255,0.02)",
+                            }}
+                            className="transition-colors"
+                            style={{ borderBottom: `1px solid ${B.border}` }}
+                          >
+                            <td className="px-5 py-3.5">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-black text-white shrink-0"
+                                  style={{
+                                    background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
+                                  }}
+                                >
+                                  {u.name.charAt(0)}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-bold text-white">
+                                    {u.name}
+                                  </p>
+                                  <p
+                                    className="text-[10px]"
+                                    style={{ color: "rgba(255,255,255,0.3)" }}
+                                  >
+                                    {u.email}
+                                  </p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <span
+                                className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                                style={{
+                                  background:
+                                    u.role === "Tutor"
+                                      ? "rgba(139,92,246,0.15)"
+                                      : `${B.primary}20`,
+                                  color:
+                                    u.role === "Tutor" ? "#a78bfa" : B.cyan,
+                                }}
+                              >
+                                {u.role}
+                              </span>
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <span
+                                className="text-[10px] font-black px-2 py-0.5 rounded-full"
+                                style={{
+                                  background:
+                                    u.status === "Active"
+                                      ? "rgba(16,185,129,0.12)"
+                                      : "rgba(239,68,68,0.12)",
+                                  color:
+                                    u.status === "Active"
+                                      ? "#34d399"
+                                      : "#f87171",
+                                }}
+                              >
+                                {u.status}
+                              </span>
+                            </td>
+                            <td
+                              className="px-5 py-3.5 text-[11px] font-medium"
+                              style={{ color: "rgba(255,255,255,0.35)" }}
+                            >
+                              {u.joined}
+                            </td>
+                            <td className="px-5 py-3.5">
+                              <div className="flex gap-1.5">
+                                <button className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-blue-500/10 transition-all">
+                                  <Eye
+                                    style={{
+                                      width: 13,
+                                      height: 13,
+                                      color: B.cyan,
+                                    }}
+                                  />
+                                </button>
+                                <button className="w-6 h-6 rounded-lg flex items-center justify-center hover:bg-rose-500/10 transition-all">
+                                  <Ban
+                                    style={{
+                                      width: 13,
+                                      height: 13,
+                                      color: "#f87171",
+                                    }}
+                                  />
+                                </button>
+                              </div>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ════════════════════════════════════════
+                TRAFFIC — superadmin only
+            ════════════════════════════════════════ */}
+            {activeTab === "traffic" && isSuperAdmin && (
+              <motion.div
+                key="traffic"
+                variants={pV}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+                className="space-y-5"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-base font-black text-white">
+                      Site Traffic Analytics
+                    </h3>
+                    <p
+                      className="text-[11px] mt-0.5"
+                      style={{ color: "rgba(255,255,255,0.35)" }}
+                    >
+                      Real-time platform monitoring
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Pulse color={B.cyan} />
+                    <span
+                      className="text-[11px] font-bold"
+                      style={{ color: B.cyan }}
+                    >
+                      Live · 30s refresh
+                    </span>
+                  </div>
+                </div>
+
+                {/* Live metric cards */}
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    {
+                      label: "Active Sessions",
+                      val: "2,847",
+                      icon: Wifi,
+                      color: B.cyan,
+                      spark: [20, 35, 28, 45, 38, 55, 48, 62, 57, 72],
+                    },
+                    {
+                      label: "Page Views Today",
+                      val: "84,291",
+                      icon: Globe,
+                      color: B.primary,
+                      spark: [30, 45, 35, 60, 50, 75, 65, 80, 72, 90],
+                    },
+                    {
+                      label: "Avg Session",
+                      val: "8m 42s",
+                      icon: Clock,
+                      color: "#10b981",
+                      spark: [5, 8, 6, 9, 7, 10, 8, 11, 9, 8],
+                    },
+                    {
+                      label: "Bounce Rate",
+                      val: "24.3%",
+                      icon: BarChart3,
+                      color: "#f59e0b",
+                      spark: [35, 30, 32, 28, 30, 26, 28, 24, 25, 24],
+                    },
+                  ].map((s, i) => (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 16 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.07 }}
+                      whileHover={{ y: -2 }}
+                      className="rounded-2xl p-5"
+                      style={{
+                        background: `linear-gradient(135deg,${s.color}12,${s.color}06)`,
+                        border: `1px solid ${s.color}28`,
+                      }}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center"
+                          style={{ background: `${s.color}18` }}
+                        >
+                          <s.icon
+                            style={{ color: s.color, width: 15, height: 15 }}
+                          />
+                        </div>
+                        <Pulse color={s.color} />
+                      </div>
+                      <p
+                        className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
+                        style={{ color: "rgba(255,255,255,0.3)" }}
+                      >
+                        {s.label}
+                      </p>
+                      <p className="text-xl font-black text-white mb-1.5">
+                        {s.val}
+                      </p>
+                      <Sparkline data={s.spark} color={s.color} />
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Hourly bar chart */}
+                <div
+                  className="rounded-2xl p-6"
+                  style={{
+                    background: B.surface,
+                    border: `1px solid ${B.border}`,
+                  }}
+                >
+                  <div className="flex justify-between items-center mb-5">
+                    <p className="text-sm font-black text-white">
+                      Today's Traffic by Hour
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className="w-2 h-2 rounded-full"
+                        style={{ background: B.cyan }}
+                      />
+                      <span
+                        className="text-[10px] font-bold"
+                        style={{ color: B.cyan }}
+                      >
+                        Page Views
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-end gap-3" style={{ height: 130 }}>
+                    {trafficData.map((d, i) => {
+                      const maxVal = Math.max(
+                        ...trafficData.map((x) => x.views),
+                      );
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 flex flex-col items-center gap-1 group cursor-pointer"
+                        >
+                          <div className="relative w-full flex-1 flex items-end">
+                            <motion.div
+                              className="w-full rounded-t-lg"
+                              initial={{ height: 0 }}
+                              animate={{
+                                height: `${(d.views / maxVal) * 100}%`,
+                              }}
+                              transition={{
+                                duration: 0.8,
+                                delay: i * 0.08,
+                                ease: "easeOut",
+                              }}
+                              style={{
+                                background: `linear-gradient(180deg,${B.cyan},${B.primary})`,
+                                minHeight: 4,
+                              }}
+                            >
+                              <div
+                                className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
+                                style={{ border: `1px solid ${B.border}` }}
+                              >
+                                {d.views.toLocaleString()}
+                              </div>
+                            </motion.div>
+                          </div>
+                          <span
+                            className="text-[9px] font-bold"
+                            style={{ color: "rgba(255,255,255,0.25)" }}
+                          >
+                            {d.hour}h
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Top pages */}
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    background: B.surface,
+                    border: `1px solid ${B.border}`,
+                  }}
+                >
+                  <div
+                    className="px-5 py-3.5"
+                    style={{ borderBottom: `1px solid ${B.border}` }}
+                  >
+                    <p className="text-sm font-black text-white">Top Pages</p>
+                  </div>
+                  <div className="divide-y" style={{ borderColor: B.border }}>
+                    {[
+                      { page: "/explore", views: "18,240", pct: 82 },
+                      { page: "/course-detail", views: "12,880", pct: 58 },
+                      { page: "/dashboard", views: "9,420", pct: 43 },
+                      { page: "/", views: "7,810", pct: 35 },
+                      { page: "/checkout", views: "3,240", pct: 15 },
+                    ].map((p, i) => (
+                      <div
+                        key={i}
+                        className="px-5 py-3 flex items-center gap-4 hover:bg-white/2 transition-colors"
+                      >
+                        <p className="text-xs font-bold text-white font-mono flex-1">
+                          {p.page}
+                        </p>
+                        <div
+                          className="w-28 h-1 rounded-full overflow-hidden"
+                          style={{ background: "rgba(255,255,255,0.06)" }}
+                        >
+                          <motion.div
+                            className="h-full rounded-full"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${p.pct}%` }}
+                            transition={{ duration: 0.8, delay: i * 0.1 }}
+                            style={{
+                              background: `linear-gradient(90deg,${B.primary},${B.cyan})`,
+                            }}
+                          />
+                        </div>
+                        <p className="text-xs font-black text-white shrink-0">
+                          {p.views}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {/* ════════════════════════════════════════
+                FINANCE — superadmin only
+            ════════════════════════════════════════ */}
+            {activeTab === "finance" && isSuperAdmin && (
+              <motion.div
+                key="finance"
+                variants={pV}
+                initial="initial"
+                animate="in"
+                exit="out"
+                transition={{ duration: 0.3 }}
+                className="space-y-5"
+              >
+                {/* Summary cards */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[
+                    {
+                      label: "Gross Revenue",
+                      val: stats?.totalPlatformRevenue || "₹1.24 Cr",
+                      icon: TrendingUp,
+                      color: "#10b981",
+                      trend: "+14.2%",
+                    },
+                    {
+                      label: "Platform Profit",
+                      val: "₹37.2 L",
+                      icon: DollarSign,
+                      color: B.cyan,
+                      trend: "+18.1%",
+                    },
+                    {
+                      label: "Tutor Payouts",
+                      val: "₹86.5 L",
+                      icon: Users,
+                      color: "#8b5cf6",
+                      trend: "This month",
+                    },
+                  ].map((s, i) => (
+                    <motion.div
+                      key={i}
+                      whileHover={{ y: -2 }}
+                      className="rounded-2xl p-5 flex items-center gap-4"
+                      style={{
+                        background: `linear-gradient(135deg,${s.color}12,${s.color}06)`,
+                        border: `1px solid ${s.color}28`,
+                      }}
+                    >
+                      <div
+                        className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                        style={{ background: `${s.color}18` }}
+                      >
+                        <s.icon
+                          style={{ color: s.color, width: 18, height: 18 }}
+                        />
+                      </div>
+                      <div>
+                        <p
+                          className="text-[10px] font-bold uppercase tracking-wider"
+                          style={{ color: "rgba(255,255,255,0.3)" }}
+                        >
+                          {s.label}
+                        </p>
+                        <p className="text-2xl font-black text-white">
+                          {s.val}
+                        </p>
+                        <p
+                          className="text-[10px] font-bold mt-0.5"
+                          style={{ color: s.color }}
+                        >
+                          {s.trend}
+                        </p>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Revenue bar chart */}
+                <div
+                  className="rounded-2xl p-6"
+                  style={{
+                    background: B.surface,
+                    border: `1px solid ${B.border}`,
+                  }}
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <p className="text-sm font-black text-white">
+                      Monthly Revenue
+                    </p>
+                    <button
+                      className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all"
+                      style={{ color: B.cyan, border: `1px solid ${B.border}` }}
+                    >
+                      <Download style={{ width: 13, height: 13 }} /> Export CSV
+                    </button>
+                  </div>
+                  <div className="flex items-end gap-3" style={{ height: 110 }}>
+                    {[42, 58, 71, 55, 83, 95].map((h, i) => (
+                      <motion.div
+                        key={i}
+                        className="flex-1 flex flex-col items-center gap-1.5 group cursor-pointer"
+                      >
+                        <div className="relative w-full flex-1 flex items-end">
+                          <motion.div
+                            className="w-full rounded-t-xl"
+                            initial={{ height: 0 }}
+                            animate={{ height: `${h}%` }}
+                            transition={{
+                              duration: 0.8,
+                              delay: i * 0.1,
+                              ease: "easeOut",
+                            }}
+                            style={{
+                              background:
+                                i === 5
+                                  ? `linear-gradient(180deg,${B.cyan},${B.primary})`
+                                  : `${B.primary}28`,
+                              minHeight: 4,
+                            }}
+                          >
+                            <div
+                              className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black whitespace-nowrap px-1.5 py-0.5 rounded text-white"
+                              style={{
+                                background: B.dark,
+                                border: `1px solid ${B.border}`,
+                              }}
+                            >
+                              ₹{(h * 10500).toLocaleString("en-IN")}
+                            </div>
+                          </motion.div>
+                        </div>
+                        <span
+                          className="text-[9px] font-bold"
+                          style={{ color: "rgba(255,255,255,0.25)" }}
+                        >
+                          {["Jan", "Feb", "Mar", "Apr", "May", "Jun"][i]}
+                        </span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Full transaction table */}
+                <div
+                  className="rounded-2xl overflow-hidden"
+                  style={{
+                    background: B.surface,
+                    border: `1px solid ${B.border}`,
+                  }}
+                >
+                  <div
+                    className="px-5 py-3.5 flex items-center justify-between"
+                    style={{ borderBottom: `1px solid ${B.border}` }}
+                  >
+                    <p className="text-sm font-black text-white">
+                      All Transactions
+                    </p>
+                    <button
+                      className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all"
+                      style={{
+                        color: "rgba(255,255,255,0.4)",
+                        border: `1px solid ${B.border}`,
+                      }}
+                    >
+                      <Filter style={{ width: 11, height: 11 }} /> Filter
+                    </button>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead
+                        style={{
+                          borderBottom: `1px solid ${B.border}`,
+                          background: "rgba(255,255,255,0.015)",
+                        }}
+                      >
+                        <tr>
+                          {[
+                            "ID",
+                            "User",
+                            "Item",
+                            "Amount",
+                            "Date",
+                            "Status",
+                          ].map((h) => (
+                            <th
+                              key={h}
+                              className="px-5 py-3 text-[10px] font-black uppercase tracking-wider"
+                              style={{ color: "rgba(255,255,255,0.2)" }}
+                            >
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {transactions.map((t, i) => (
+                          <motion.tr
+                            key={i}
+                            whileHover={{
+                              backgroundColor: "rgba(255,255,255,0.02)",
+                            }}
+                            className="transition-colors"
+                            style={{ borderBottom: `1px solid ${B.border}` }}
+                          >
+                            <td
+                              className="px-5 py-3 text-[10px] font-black font-mono"
+                              style={{ color: "rgba(255,255,255,0.3)" }}
+                            >
+                              {t.id}
+                            </td>
+                            <td className="px-5 py-3 text-xs font-bold text-white">
+                              {t.user}
+                            </td>
+                            <td
+                              className="px-5 py-3 text-xs font-medium"
+                              style={{ color: "rgba(255,255,255,0.45)" }}
+                            >
+                              {t.item}
+                            </td>
+                            <td className="px-5 py-3">
+                              <span
+                                className={`text-xs font-black ${t.amount.startsWith("-") ? "text-rose-400" : "text-emerald-400"}`}
+                              >
+                                {t.amount}
+                              </span>
+                            </td>
+                            <td
+                              className="px-5 py-3 text-[11px] font-medium"
+                              style={{ color: "rgba(255,255,255,0.3)" }}
+                            >
+                              {t.date}
+                            </td>
+                            <td className="px-5 py-3">
+                              <span
+                                className={`text-[10px] font-black px-2 py-0.5 rounded-full ${t.status === "Completed" ? "bg-emerald-500/15 text-emerald-400" : "bg-blue-500/15 text-blue-400"}`}
+                              >
+                                {t.status}
+                              </span>
+                            </td>
+                          </motion.tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </main>
     </div>

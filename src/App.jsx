@@ -2,6 +2,7 @@
 import React, { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Toaster } from "react-hot-toast";
+import { AuthProvider } from "./context/AuthContext";
 
 // ── Lazy pages ──
 const LandingPage = lazy(() => import("./LandingPage"));
@@ -27,7 +28,7 @@ const getUser = () => {
   try {
     return JSON.parse(localStorage.getItem("user_details") || "null");
   } catch (e) {
-    console.log('e: ', e);
+    console.log("e: ", e);
     return null;
   }
 };
@@ -64,90 +65,92 @@ function PublicRoute({ children }) {
 function AppRoutes() {
   return (
     <Suspense fallback={<Loader />}>
-      <Routes>
-        {/* Public */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/explore" element={<Explore />} />
-        <Route path="/course-detail" element={<CourseDetail />} />
+      <AuthProvider>
+        <Routes>
+          {/* Public */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/explore" element={<Explore />} />
+          <Route path="/course-detail" element={<CourseDetail />} />
 
-        {/* Auth */}
-        <Route
-          path="/login"
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
+          {/* Auth */}
+          <Route
+            path="/login"
+            element={
+              <PublicRoute>
+                <Login />
+              </PublicRoute>
+            }
+          />
 
-        {/* Protected */}
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
+          {/* Protected */}
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute allowedRoles={["tutor", "admin", "super_admin"]}>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/course"
-          element={
-            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
-              <CoursePlayer />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/course"
+            element={
+              <ProtectedRoute allowedRoles={["tutor", "admin", "super_admin"]}>
+                <CoursePlayer />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/course/:id"
-          element={
-            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
-              <CoursePlayer />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/course/:id"
+            element={
+              <ProtectedRoute allowedRoles={["tutor", "admin", "super_admin"]}>
+                <CoursePlayer />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute allowedRoles={["tutor", "admin","super_admin"]}>
-              <Checkout />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute allowedRoles={["tutor", "admin", "super_admin"]}>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
 
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute  allowedRoles={["tutor", "admin","super_admin"]}>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute allowedRoles={["tutor", "admin", "super_admin"]}>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Tutor / Admin */}
-        <Route
-          path="/user"
-          element={
-            <ProtectedRoute allowedRoles={["tutor", "admin"]}>
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
+          {/* Tutor / Admin */}
+          <Route
+            path="/user"
+            element={
+              <ProtectedRoute allowedRoles={["tutor", "admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
 
-        {/* Super Admin */}
-        <Route
-          path="/super-admin"
-          element={
-            <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
-              <SuperAdmin />
-            </ProtectedRoute>
-          }
-        />
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+          {/* Super Admin */}
+          <Route
+            path="/super-admin"
+            element={
+              <ProtectedRoute allowedRoles={["super_admin", "admin"]}>
+                <SuperAdmin />
+              </ProtectedRoute>
+            }
+          />
+          {/* Catch-all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </AuthProvider>
     </Suspense>
   );
 }

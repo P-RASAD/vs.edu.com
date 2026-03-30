@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useContext,
 } from "react";
 import { AuthService } from "../services/api";
 
@@ -120,15 +121,14 @@ export function AuthProvider({ children }) {
       register,
       logout,
       dashboardRoute,
-    ]
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-// ── Hook ──
-// export const useAuth = () => {
-//   const ctx = useContext(AuthContext);
-//   if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
-//   return ctx;
-// };
+export const useAuth = () => {
+  const ctx = useContext(AuthContext);
+  if (!ctx) throw new Error("useAuth must be used inside <AuthProvider>");
+  return ctx;
+};

@@ -29,6 +29,16 @@
       "mobile": "9012345678",
       "role": "tutor",
       "password": "avinash@123"
+    },
+    {
+      "id": 4,
+      "first_name": "learner",
+      "last_name": "user",
+      "username": "learner",
+      "email": "learner@example.com",
+      "mobile": "9012345678",
+      "role": "user",
+      "password": "123456"
     }
   ]
 }
