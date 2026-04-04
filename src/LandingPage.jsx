@@ -69,9 +69,6 @@ const fadeUp = {
   },
 };
 
-// ─────────────────────────────────────────────
-// AnoAI WEBGL SHADER (Optimized Aurora)
-// ─────────────────────────────────────────────
 function AnoAIBackground() {
   const containerRef = useRef(null);
 
@@ -82,17 +79,14 @@ function AnoAIBackground() {
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-    // Performance: alpha is false to prevent the black flashing bug
-    const renderer = new THREE.WebGLRenderer({
-      antialias: false,
-      alpha: false,
-    });
+    // Performance: Keep alpha false to prevent scrolling lag
+    const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: false });
 
     const getWidth = () => container.clientWidth || window.innerWidth;
     const getHeight = () => container.clientHeight || window.innerHeight;
 
     renderer.setSize(getWidth(), getHeight());
-    renderer.setPixelRatio(1); // Performance: Keeps retina screens from lagging
+    renderer.setPixelRatio(1); // Performance: Keep at 1
 
     const canvas = renderer.domElement;
     canvas.style.cssText =
@@ -112,55 +106,66 @@ function AnoAIBackground() {
         uniform float iTime;
         uniform vec2  iResolution;
 
-        // Lowered from 3 to 2 for better performance, still looks great
-        #define NUM_OCTAVES 2
-
-        float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
-
-        float noise(vec2 p) {
-          vec2 ip = floor(p); vec2 u = fract(p);
-          u = u * u * (3.0 - 2.0 * u);
-          float res = mix(mix(rand(ip),rand(ip+vec2(1.0,0.0)),u.x),mix(rand(ip+vec2(0.0,1.0)),rand(ip+vec2(1.0,1.0)),u.x),u.y);
-          return res * res;
-        }
-
-        float fbm(vec2 x) {
-          float v=0.0; float a=0.3; vec2 shift=vec2(100.0);
-          mat2 rot=mat2(cos(0.5),sin(0.5),-sin(0.5),cos(0.5));
-          for(int i=0;i<NUM_OCTAVES;++i){ v+=a*noise(x); x=rot*x*2.0+shift; a*=0.4; }
-          return v;
+        // Random hash function
+        float random(vec2 st) {
+            return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
         }
 
         void main() {
-          vec2 shake=vec2(sin(iTime*1.2)*0.002,cos(iTime*2.1)*0.002);
-          vec2 p=((gl_FragCoord.xy+shake*iResolution.xy)-iResolution.xy*0.5)/iResolution.y*mat2(6.0,-4.0,4.0,6.0);
+            vec2 uv = gl_FragCoord.xy / iResolution.xy;
+            uv.x *= iResolution.x / iResolution.y;
 
-          vec2 v;
-          vec3 o=vec3(0.0);
-          float f=2.0+fbm(p+vec2(iTime*5.0,0.0))*0.5;
+            vec3 color = vec3(0.0);
 
-          // Performance: Lowered from 35.0 to 15.0 loops. Makes it a "little" lighter but keeps the glow.
-          for(float i=0.0;i<15.0;i++){
-            v=p+cos(i*i+(iTime+p.x*0.08)*0.025+i*vec2(13.0,11.0))*3.5+vec2(sin(iTime*3.0+i)*0.003,cos(iTime*3.5-i)*0.003);
-            float tailNoise=fbm(v+vec2(iTime*0.5,i))*0.3*(1.0-(i/15.0));
-            vec3 auroraColors=vec3(0.1+0.3*sin(i*0.2+iTime*0.4),0.3+0.5*cos(i*0.3+iTime*0.5),0.7+0.3*sin(i*0.4+iTime*0.3));
+            // 3 Layers for 3D depth
+            for (float i = 1.0; i < 4.0; i++) {
+                // Grid scale
+                vec2 st = uv * (40.0 * i);
 
-            float denom = length(max(v,vec2(v.x*f*0.015,v.y*1.5))) + 0.001;
-            vec3 contribution=auroraColors*exp(sin(i*i+iTime*0.8))/denom;
+                // 1. MAKE IT FALL: Move the grid vertically very fast, and slightly horizontally
+                st.y += iTime * 4.0 * i;
+                st.x += iTime * 0.5 * i;
 
-            float thin=smoothstep(0.0,1.0,i/15.0)*1.2;
-            o+=contribution*(1.0+tailNoise*0.8)*thin;
-          }
+                vec2 ipos = floor(st);
+                vec2 fpos = fract(st);
 
-          vec3 color = pow(max(o/100.0, 0.0), vec3(1.6));
+                float rand = random(ipos);
 
-          // Safe tone mapping instead of tanh()
-          color = color / (1.0 + color);
+                // Density of the falling streaks
+                if (rand > 0.94) {
+                    vec2 diff = fpos - vec2(0.5);
 
-          // Deep dark blue background
-          vec3 bg = mix(vec3(0.02, 0.04, 0.08), vec3(0.0, 0.01, 0.03), gl_FragCoord.y / iResolution.y);
+                    // 2. STRETCH THE SHAPE: Make the Y axis much smaller to stretch it into a falling streak
+                    diff.y *= 0.12;
+                    diff.x *= 1.5;
 
-          gl_FragColor = vec4(color * 1.5 * 0.60 + bg, 1.0);
+                    float dist = length(diff);
+
+                    // Add a twinkle/pulsing effect
+                    float twinkle = sin(iTime * 6.0 + rand * 100.0) * 0.5 + 0.5;
+
+                    // 3. COLORFUL PALETTE: Generate distinct neon colors for each streak based on its random ID
+                    vec3 streakColor = vec3(
+                        0.2 + 0.6 * sin(rand * 15.0 + iTime * 0.5),  // Red/Pink channel
+                        0.4 + 0.5 * cos(rand * 25.0 + iTime * 0.4),  // Green/Cyan channel
+                        0.8 + 0.2 * sin(rand * 35.0)                 // Blue dominance
+                    );
+
+                    // Brightness based on distance to center of the streak
+                    float brightness = (0.015 / dist) * twinkle;
+
+                    // Add it to the final color, making closer streaks brighter
+                    color += streakColor * brightness * (1.5 / i);
+                }
+            }
+
+            // Deep, subtle dark blue/purple background gradient
+            vec3 bg = mix(vec3(0.04, 0.01, 0.08), vec3(0.01, 0.02, 0.05), gl_FragCoord.y / iResolution.y);
+
+            // Tone mapping to prevent blown-out whites
+            color = color / (1.0 + color);
+
+            gl_FragColor = vec4(color + bg, 1.0);
         }
       `,
     });
@@ -171,17 +176,16 @@ function AnoAIBackground() {
     let frameId;
     let isVisible = true;
 
-    // This observer fixes the scrolling black box bug
     const observer = new IntersectionObserver(
       ([entry]) => {
         isVisible = entry.isIntersecting;
       },
-      { threshold: 0 },
+      { threshold: 0 }
     );
     observer.observe(container);
 
     const animate = () => {
-      // Only animate if the user is looking at the hero section
+      // Only render if the hero section is visible on screen
       if (isVisible) {
         material.uniforms.iTime.value += 0.012;
         renderer.render(scene, camera);
@@ -213,17 +217,10 @@ function AnoAIBackground() {
   return (
     <div
       ref={containerRef}
-      style={{
-        position: "absolute",
-        inset: 0,
-        zIndex: 0,
-        overflow: "hidden",
-        backgroundColor: "#02060e",
-      }}
+      style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden", backgroundColor: "#02060e" }}
     />
   );
 }
-
 // ─────────────────────────────────────────────
 // HERO RIGHT — LOGGED IN PANEL (learner / tutor)
 // ─────────────────────────────────────────────
