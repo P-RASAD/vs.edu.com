@@ -32,18 +32,10 @@ export default function Profile() {
   // Load real user data from our mock local storage database!
   useEffect(() => {
     const storedUser = localStorage.getItem("vsintellecta_active_user");
-    console.log('storedUser: ', storedUser);
     if (storedUser) {
-  //     setUserData({
-  //   firstName: "Student",
-  //   lastName: "User",
-  //   username: "student123",
-  //   email: "student@example.com",
-  //   mobile: "+91 00000 00000",
-  //   role: "learner",
-  // });
+      // user data available if needed
     }
-  }, [userData]);
+  }, []);
 
   const handleLogout = () => {
     setUserData({})
@@ -71,7 +63,7 @@ export default function Profile() {
   ];
 
   return (
-    <div className="min-h-screen bg-[#F6F9FC] text-slate-900 font-sans selection:bg-blue-200 flex flex-col">
+    <div className="min-h-screen text-slate-900 font-sans selection:bg-blue-200 flex flex-col" style={{ background: "linear-gradient(160deg,#eaf2ff 0%,#f0f6ff 50%,#e4eeff 100%)" }}>
       <Header />
 
       {/* Decorative Header Background */}

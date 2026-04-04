@@ -3,8 +3,11 @@
   margin: 0 auto;
   padding: 2rem;
   text-align: center;
-}
 
+}
+body{
+background: linear-gradient(rgb(232, 240, 254) 0%, rgb(221, 238, 255) 50%, rgb(228, 240, 251) 100%);
+}
 .logo {
   height: 6em;
   padding: 1.5em;

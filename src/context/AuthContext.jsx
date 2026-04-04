@@ -19,22 +19,30 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // ── Hydrate ──
+  // ── Hydrate from localStorage ──
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem(TOKEN_KEY);
-      const storedUser = localStorage.getItem(USER_KEY);
+      // Read from vsintellecta_active_user OR fallback to user_details (set by Login.jsx)
+      const storedUser =
+        localStorage.getItem(USER_KEY) ||
+        localStorage.getItem("user_details");
 
-      if (storedToken) {
-        setToken(storedToken);
-      }
+      if (storedToken) setToken(storedToken);
 
       if (storedUser) {
-        setUser(JSON.parse(storedUser));
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+        // Ensure both keys are in sync
+        if (!localStorage.getItem(USER_KEY))
+          localStorage.setItem(USER_KEY, storedUser);
+        if (!localStorage.getItem(TOKEN_KEY))
+          localStorage.setItem(TOKEN_KEY, `mock-token-${parsed.id}`);
       }
     } catch (err) {
       console.error("Auth hydration error:", err);
       localStorage.removeItem(USER_KEY);
+      localStorage.removeItem("user_details");
     } finally {
       setLoading(false);
     }
@@ -76,6 +84,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem("user_details"); // clear Login.jsx key too
   }, []);
 
   // ── Roles ──

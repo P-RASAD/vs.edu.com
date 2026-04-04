@@ -35,7 +35,6 @@ import {
   Send,
   Radio,
   Lock,
-  Image as ImageIcon,
   BookMarked,
   Brain,
   Trophy,
@@ -71,95 +70,148 @@ const fadeUp = {
 };
 
 // ─────────────────────────────────────────────
-// AnoAI WEBGL SHADER (exact — untouched)
+// AnoAI WEBGL SHADER
 // ─────────────────────────────────────────────
 function AnoAIBackground() {
   const containerRef = useRef(null);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
-    const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    // alpha: false is crucial here to stop transparent composite lag
+    const renderer = new THREE.WebGLRenderer({
+      antialias: false,
+      alpha: false,
+    });
+
+    const getWidth = () => container.clientWidth || window.innerWidth;
+    const getHeight = () => container.clientHeight || window.innerHeight;
+
+    renderer.setSize(getWidth(), getHeight());
+    renderer.setPixelRatio(1); // Keep this at 1 to prevent Retina display lag
+
     const canvas = renderer.domElement;
     canvas.style.cssText =
-      "position:absolute;top:0;left:0;width:100%;height:100%;display:block;z-index:0;";
+      "position:absolute;top:0;left:0;width:100%;height:100%;display:block;z-index:0;transform:translateZ(0);";
     container.appendChild(canvas);
+
     const material = new THREE.ShaderMaterial({
       uniforms: {
         iTime: { value: 0 },
         iResolution: {
-          value: new THREE.Vector2(window.innerWidth, window.innerHeight),
+          value: new THREE.Vector2(getWidth(), getHeight()),
         },
       },
       vertexShader: `void main() { gl_Position = vec4(position, 1.0); }`,
       fragmentShader: `
+        precision highp float;
         uniform float iTime;
         uniform vec2  iResolution;
-        #define NUM_OCTAVES 3
+        #define NUM_OCTAVES 2
+
         float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
+
         float noise(vec2 p) {
           vec2 ip = floor(p); vec2 u = fract(p);
           u = u * u * (3.0 - 2.0 * u);
           float res = mix(mix(rand(ip),rand(ip+vec2(1.0,0.0)),u.x),mix(rand(ip+vec2(0.0,1.0)),rand(ip+vec2(1.0,1.0)),u.x),u.y);
           return res * res;
         }
+
         float fbm(vec2 x) {
           float v=0.0; float a=0.3; vec2 shift=vec2(100.0);
           mat2 rot=mat2(cos(0.5),sin(0.5),-sin(0.5),cos(0.5));
           for(int i=0;i<NUM_OCTAVES;++i){ v+=a*noise(x); x=rot*x*2.0+shift; a*=0.4; }
           return v;
         }
+
         void main() {
-          vec2 shake=vec2(sin(iTime*1.2)*0.005,cos(iTime*2.1)*0.005);
+          vec2 shake=vec2(sin(iTime*1.2)*0.002,cos(iTime*2.1)*0.002);
           vec2 p=((gl_FragCoord.xy+shake*iResolution.xy)-iResolution.xy*0.5)/iResolution.y*mat2(6.0,-4.0,4.0,6.0);
-          vec2 v; vec4 o=vec4(0.0);
+
+          vec2 v;
+          vec3 o=vec3(0.0);
           float f=2.0+fbm(p+vec2(iTime*5.0,0.0))*0.5;
-          for(float i=0.0;i<35.0;i++){
+
+          for(float i=0.0;i<12.0;i++){
             v=p+cos(i*i+(iTime+p.x*0.08)*0.025+i*vec2(13.0,11.0))*3.5+vec2(sin(iTime*3.0+i)*0.003,cos(iTime*3.5-i)*0.003);
-            float tailNoise=fbm(v+vec2(iTime*0.5,i))*0.3*(1.0-(i/35.0));
-            vec4 auroraColors=vec4(0.1+0.3*sin(i*0.2+iTime*0.4),0.3+0.5*cos(i*0.3+iTime*0.5),0.7+0.3*sin(i*0.4+iTime*0.3),1.0);
-            vec4 contribution=auroraColors*exp(sin(i*i+iTime*0.8))/length(max(v,vec2(v.x*f*0.015,v.y*1.5)));
-            float thin=smoothstep(0.0,1.0,i/35.0)*0.6;
+            float tailNoise=fbm(v+vec2(iTime*0.5,i))*0.3*(1.0-(i/12.0));
+            vec3 auroraColors=vec3(0.1+0.3*sin(i*0.2+iTime*0.4),0.3+0.5*cos(i*0.3+iTime*0.5),0.7+0.3*sin(i*0.4+iTime*0.3));
+
+            float denom = length(max(v,vec2(v.x*f*0.015,v.y*1.5))) + 0.001;
+            vec3 contribution=auroraColors*exp(sin(i*i+iTime*0.8))/denom;
+
+            float thin=smoothstep(0.0,1.0,i/12.0)*1.5;
             o+=contribution*(1.0+tailNoise*0.8)*thin;
           }
-          o=tanh(pow(o/100.0,vec4(1.6)));
-          gl_FragColor=o*1.5*0.60;
+
+          vec3 color = pow(max(o/100.0, 0.0), vec3(1.6));
+          color = color / (1.0 + color);
+
+          gl_FragColor = vec4(color * 1.5 * 0.60, 1.0);
         }
       `,
     });
+
     const geometry = new THREE.PlaneGeometry(2, 2);
     scene.add(new THREE.Mesh(geometry, material));
+
     let frameId;
+    let isVisible = true; // Track if the canvas is on screen
+
+    // NEW: Intersection Observer to detect visibility
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        isVisible = entry.isIntersecting;
+      },
+      { threshold: 0 }, // Triggers as soon as 1px is visible/hidden
+    );
+    observer.observe(container);
+
     const animate = () => {
-      material.uniforms.iTime.value += 0.016;
-      renderer.render(scene, camera);
+      // ONLY animate and render if the user is looking at it
+      if (isVisible) {
+        material.uniforms.iTime.value += 0.01;
+        renderer.render(scene, camera);
+      }
       frameId = requestAnimationFrame(animate);
     };
     animate();
+
     const handleResize = () => {
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      material.uniforms.iResolution.value.set(
-        window.innerWidth,
-        window.innerHeight,
-      );
+      const width = getWidth();
+      const height = getHeight();
+      renderer.setSize(width, height);
+      material.uniforms.iResolution.value.set(width, height);
     };
+
     window.addEventListener("resize", handleResize);
+
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
+      observer.disconnect(); // Clean up observer
       if (container.contains(canvas)) container.removeChild(canvas);
       geometry.dispose();
       material.dispose();
       renderer.dispose();
     };
   }, []);
+
   return (
     <div
       ref={containerRef}
-      style={{ position: "absolute", inset: 0, zIndex: 0, overflow: "hidden" }}
+      style={{
+        position: "absolute",
+        inset: 0,
+        zIndex: 0,
+        overflow: "hidden",
+        backgroundColor: "#02060e",
+      }}
     />
   );
 }
@@ -312,7 +364,7 @@ function HeroPanelLoggedIn({ user }) {
 }
 
 // ─────────────────────────────────────────────
-// HERO RIGHT — LOGGED OUT PANEL (beautiful visual)
+// HERO RIGHT — LOGGED OUT PANEL
 // ─────────────────────────────────────────────
 function HeroPanelGuest() {
   const navigate = useNavigate();
@@ -492,16 +544,31 @@ function HeroPanelGuest() {
 }
 
 // ─────────────────────────────────────────────
-// TESTIMONIAL CARD (unchanged)
+// TESTIMONIAL CARD
 // ─────────────────────────────────────────────
 function TestimonialCard({ testimonial }) {
   const { name, role, rating = 5, tag, content, result } = testimonial;
   return (
     <motion.div
       variants={fadeUpChild}
-      className="break-inside-avoid bg-white border border-slate-200/80 rounded-[1.75rem] p-6 shadow-sm hover:shadow-lg hover:shadow-slate-200/60 hover:-translate-y-1 transition-all duration-400 group relative overflow-hidden mb-5"
+      whileHover={{ y: -6, boxShadow: "0 20px 48px rgba(29,78,216,0.13)" }}
+      transition={{ type: "spring", stiffness: 300, damping: 22 }}
+      className="break-inside-avoid rounded-[2rem] p-6 group relative overflow-hidden mb-4"
+      style={{
+        background: "rgba(255,255,255,0.82)",
+        backdropFilter: "blur(20px)",
+        border: "1.5px solid rgba(255,255,255,0.95)",
+        boxShadow:
+          "0 4px 24px rgba(29,78,216,0.08), 0 1px 0 rgba(255,255,255,0.9) inset",
+      }}
     >
-      <div className="absolute -top-8 -right-8 w-24 h-24 bg-blue-400/5 rounded-full blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+      <div
+        className="absolute -top-8 -right-8 w-24 h-24 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(circle,rgba(29,78,216,0.08),transparent)",
+        }}
+      />
       <div className="flex items-center gap-1 mb-3">
         {Array.from({ length: rating }).map((_, i) => (
           <Star key={i} className="w-3 h-3 text-amber-400 fill-current" />
@@ -525,7 +592,13 @@ function TestimonialCard({ testimonial }) {
         </div>
       )}
       <div className="flex items-center gap-2.5 pt-3 border-t border-slate-100">
-        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white font-black text-sm shadow-md shrink-0">
+        <div
+          className="w-9 h-9 rounded-full flex items-center justify-center text-white font-black text-sm shrink-0"
+          style={{
+            background: "linear-gradient(135deg,#1d4ed8,#0284c7)",
+            boxShadow: "0 3px 10px rgba(29,78,216,0.3)",
+          }}
+        >
           {name.charAt(0)}
         </div>
         <div>
@@ -618,7 +691,10 @@ function FaqChatSection() {
   };
 
   return (
-    <section className="bg-[#070d18] py-20 relative overflow-hidden">
+    <section
+      className="py-20 relative overflow-hidden"
+      style={{ background: "linear-gradient(180deg,#050E2B 0%,#0a1628 100%)" }}
+    >
       <div
         className="absolute top-1/3 left-1/4 w-[350px] h-[350px] rounded-full blur-[110px] pointer-events-none"
         style={{ background: "rgba(37,99,235,0.07)" }}
@@ -978,110 +1054,266 @@ function FaqChatSection() {
 // ─────────────────────────────────────────────
 function CourseCarousel({ cards, onCardClick }) {
   const trackRef = useRef(null);
-  const posRef = useRef(0);
-  const pausedRef = useRef(false);
-  const fidRef = useRef(null);
-  const CARD_W = 296;
-  const SPEED = 0.7;
-  const scroll = useCallback(() => {
-    if (!trackRef.current) return;
-    if (!pausedRef.current) {
-      posRef.current += SPEED;
-      const half = trackRef.current.scrollWidth / 2;
-      if (posRef.current >= half) posRef.current = 0;
-      trackRef.current.scrollLeft = posRef.current;
-    }
-    fidRef.current = requestAnimationFrame(scroll);
+  const outerRef = useRef(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollLeft = useRef(0);
+  const velRef = useRef(0);
+  const lastX = useRef(0);
+  const rafRef = useRef(null);
+  const autoRef = useRef(null);
+  const CARD_W = 300;
+  const GAP = 16;
+  const SNAP = CARD_W + GAP;
+
+  const startAuto = useCallback(() => {
+    cancelAnimationFrame(autoRef.current);
+    let pos = trackRef.current ? trackRef.current.scrollLeft : 0;
+    const tick = () => {
+      if (!trackRef.current || isDragging.current) return;
+      pos += 0.55;
+      const max = trackRef.current.scrollWidth / 2;
+      if (pos >= max) pos = 0;
+      trackRef.current.scrollLeft = pos;
+      autoRef.current = requestAnimationFrame(tick);
+    };
+    autoRef.current = requestAnimationFrame(tick);
   }, []);
+
+  const stopAuto = () => cancelAnimationFrame(autoRef.current);
+
   useEffect(() => {
-    fidRef.current = requestAnimationFrame(scroll);
-    return () => cancelAnimationFrame(fidRef.current);
-  }, [scroll]);
-  const step = (dir) => {
-    posRef.current += dir * CARD_W;
-    if (trackRef.current) trackRef.current.scrollLeft = posRef.current;
+    startAuto();
+    return () => cancelAnimationFrame(autoRef.current);
+  }, [startAuto]);
+
+  // ── Drag momentum ──
+  const onMouseDown = (e) => {
+    stopAuto();
+    isDragging.current = true;
+    startX.current = e.pageX - outerRef.current.offsetLeft;
+    scrollLeft.current = trackRef.current.scrollLeft;
+    lastX.current = e.pageX;
+    velRef.current = 0;
+    cancelAnimationFrame(rafRef.current);
+    outerRef.current.style.cursor = "grabbing";
   };
+  const onMouseMove = (e) => {
+    if (!isDragging.current) return;
+    e.preventDefault();
+    const x = e.pageX - outerRef.current.offsetLeft;
+    const walk = (x - startX.current) * 1.4;
+    trackRef.current.scrollLeft = scrollLeft.current - walk;
+    velRef.current = e.pageX - lastX.current;
+    lastX.current = e.pageX;
+  };
+  const onMouseUp = () => {
+    isDragging.current = false;
+    outerRef.current.style.cursor = "grab";
+    // Momentum
+    const decelerate = () => {
+      if (Math.abs(velRef.current) < 0.5) {
+        startAuto();
+        return;
+      }
+      trackRef.current.scrollLeft -= velRef.current * 1.5;
+      velRef.current *= 0.88;
+      rafRef.current = requestAnimationFrame(decelerate);
+    };
+    rafRef.current = requestAnimationFrame(decelerate);
+  };
+
+  // ── Touch ──
+  const onTouchStart = (e) => {
+    stopAuto();
+    startX.current = e.touches[0].pageX;
+    scrollLeft.current = trackRef.current.scrollLeft;
+    velRef.current = 0;
+    lastX.current = e.touches[0].pageX;
+  };
+  const onTouchMove = (e) => {
+    const dx = startX.current - e.touches[0].pageX;
+    trackRef.current.scrollLeft = scrollLeft.current + dx * 1.2;
+    velRef.current = lastX.current - e.touches[0].pageX;
+    lastX.current = e.touches[0].pageX;
+  };
+  const onTouchEnd = () => {
+    const decel = () => {
+      if (Math.abs(velRef.current) < 0.5) {
+        startAuto();
+        return;
+      }
+      trackRef.current.scrollLeft += velRef.current * 1.5;
+      velRef.current *= 0.88;
+      rafRef.current = requestAnimationFrame(decel);
+    };
+    rafRef.current = requestAnimationFrame(decel);
+  };
+
+  // Arrow scroll — smooth snap to next card
+  const scrollBy = (dir) => {
+    stopAuto();
+    trackRef.current.scrollBy({ left: dir * SNAP * 2.5, behavior: "smooth" });
+    setTimeout(startAuto, 2200);
+  };
+
   return (
-    <div className="relative w-full">
-      <button
-        onClick={() => step(-1)}
-        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-200 group"
+    <div className="relative">
+      <motion.button
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        onClick={() => scrollBy(-1)}
+        className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center active:scale-95"
+        style={{
+          background: "rgba(255,255,255,0.88)",
+          backdropFilter: "blur(16px)",
+          boxShadow:
+            "0 4px 16px rgba(29,78,216,0.12), 0 1px 0 rgba(255,255,255,0.8) inset",
+          border: "1.5px solid rgba(255,255,255,0.95)",
+        }}
       >
-        <ChevronLeft className="w-5 h-5 text-slate-600 group-hover:text-white" />
-      </button>
-      <button
-        onClick={() => step(1)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-10 h-10 rounded-full bg-white shadow-lg border border-slate-200 flex items-center justify-center hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-all duration-200 group"
-      >
-        <ChevronRight className="w-5 h-5 text-slate-600 group-hover:text-white" />
-      </button>
-      <div className="absolute left-0 top-0 w-20 h-full bg-gradient-to-r from-slate-50 to-transparent z-10 pointer-events-none" />
-      <div className="absolute right-0 top-0 w-20 h-full bg-gradient-to-l from-slate-50 to-transparent z-10 pointer-events-none" />
+        <ChevronLeft className="w-4 h-4" style={{ color: "#1d4ed8" }} />
+      </motion.button>
+
+      {/* Track outer */}
       <div
-        ref={trackRef}
-        onMouseEnter={() => {
-          pausedRef.current = true;
-        }}
-        onMouseLeave={() => {
-          pausedRef.current = false;
-        }}
-        className="flex gap-5 overflow-x-hidden whitespace-nowrap py-6 px-14"
-        style={{ scrollBehavior: "auto" }}
+        ref={outerRef}
+        className="overflow-hidden select-none"
+        style={{ cursor: "grab" }}
+        onMouseDown={onMouseDown}
+        onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp}
+        onMouseLeave={onMouseUp}
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
       >
-        {[...cards, ...cards, ...cards].map((card, idx) => (
-          <div
-            key={idx}
-            onClick={() => onCardClick(card)}
-            className="inline-flex flex-col min-w-[272px] max-w-[272px] bg-white rounded-[1.75rem] p-3 shadow-md hover:shadow-xl border border-slate-200 cursor-pointer group whitespace-normal transition-all duration-300 hover:-translate-y-2"
-          >
-            <div
-              className="w-full h-40 rounded-2xl bg-slate-200 relative overflow-hidden mb-3 bg-cover bg-center shrink-0"
-              style={{ backgroundImage: `url(${card.img})` }}
+        <div
+          ref={trackRef}
+          className="flex gap-4 overflow-x-auto hide-scrollbar py-4 px-2"
+          style={{ scrollBehavior: "auto", WebkitOverflowScrolling: "touch" }}
+        >
+          {[...cards, ...cards].map((card, idx) => (
+            <motion.div
+              key={idx}
+              initial={{ opacity: 0, y: 16 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: Math.min(idx * 0.04, 0.3) }}
+              whileHover={{ y: -8, scale: 1.025 }}
+              onClick={() => onCardClick(card)}
+              className="rounded-[2rem] overflow-hidden cursor-pointer shrink-0 group"
+              style={{
+                width: `${CARD_W}px`,
+                background: "rgba(255,255,255,0.88)",
+                backdropFilter: "blur(20px)",
+                border: "1.5px solid rgba(255,255,255,0.96)",
+                boxShadow:
+                  "0 8px 32px rgba(29,78,216,0.1), 0 1px 0 rgba(255,255,255,0.8) inset",
+              }}
             >
-              <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/15 to-transparent group-hover:opacity-90 transition-opacity duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                <div className="w-12 h-12 bg-white/25 backdrop-blur-md rounded-full flex items-center justify-center border border-white/35">
-                  <Play className="w-5 h-5 text-white ml-0.5" />
+              <div className="relative overflow-hidden" style={{ height: 200 }}>
+                <img
+                  src={card.img}
+                  alt={card.title}
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                  draggable={false}
+                  onError={(e) => {
+                    e.target.src = `https://img.youtube.com/vi/${card.video?.split("/").pop()}/maxresdefault.jpg`;
+                  }}
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background:
+                      "linear-gradient(to top,rgba(10,22,40,0.65) 0%,transparent 55%)",
+                  }}
+                />
+                {/* Top badge */}
+                <div className="absolute top-3 left-3 flex gap-1.5">
+                  {card.tag && (
+                    <span
+                      className="px-2.5 py-0.5 rounded-full text-[10px] font-black text-white uppercase tracking-wider"
+                      style={{
+                        background: "rgba(29,78,216,0.85)",
+                        backdropFilter: "blur(8px)",
+                      }}
+                    >
+                      {card.tag}
+                    </span>
+                  )}
+                </div>
+                {/* Price bottom-right */}
+                {card.price && (
+                  <div
+                    className="absolute bottom-3 right-3 px-3 py-1.5 rounded-xl text-sm font-black text-white"
+                    style={{
+                      background: "linear-gradient(135deg,#1d4ed8,#0284c7)",
+                      boxShadow: "0 3px 10px rgba(29,78,216,0.4)",
+                      backdropFilter: "blur(8px)",
+                    }}
+                  >
+                    {card.price}
+                  </div>
+                )}
+              </div>
+              <div className="p-5">
+                <h4
+                  className="font-bold text-base leading-snug mb-1.5"
+                  style={{ color: "#0f172a" }}
+                >
+                  {card.title}
+                </h4>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <div className="flex">
+                      {Array.from({ length: Math.round(card.rating || 5) }).map(
+                        (_, i) => (
+                          <Star
+                            key={i}
+                            className="w-3 h-3 fill-current"
+                            style={{ color: "#f59e0b" }}
+                          />
+                        ),
+                      )}
+                    </div>
+                    <span
+                      className="text-xs font-semibold"
+                      style={{ color: "#64748b" }}
+                    >
+                      ({card.rating})
+                    </span>
+                  </div>
+                  <motion.div
+                    whileHover={{ x: 3 }}
+                    className="flex items-center gap-1 text-xs font-bold"
+                    style={{ color: "#1d4ed8" }}
+                  >
+                    View <ChevronRight className="w-3 h-3" />
+                  </motion.div>
                 </div>
               </div>
-              <div className="absolute bottom-2.5 left-2.5 z-10">
-                <span className="bg-blue-600/90 backdrop-blur-sm text-white text-[9px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full">
-                  {card.tag}
-                </span>
-              </div>
-              <div className="absolute top-2.5 right-2.5 z-10">
-                <span className="bg-black/50 backdrop-blur-sm text-white text-[10px] font-black px-2 py-0.5 rounded-lg">
-                  {card.price}
-                </span>
-              </div>
-            </div>
-            <div className="px-1 flex flex-col flex-1">
-              <h4 className="font-bold text-slate-900 text-[13px] leading-snug mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
-                {card.title}
-              </h4>
-              <div className="flex items-center gap-3 text-[11px] font-semibold text-slate-500 mb-3">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3" />
-                  {card.lectures}
-                </span>
-                <span className="flex items-center gap-1">
-                  <BarChart className="w-3 h-3" />
-                  {card.level}
-                </span>
-              </div>
-              <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-2.5">
-                <span className="flex items-center text-slate-700 text-xs font-black">
-                  <Star className="w-3.5 h-3.5 text-amber-500 fill-current mr-1" />
-                  {card.rating}
-                </span>
-                <span className="text-[10px] font-bold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                  View Details
-                </span>
-              </div>
-            </div>
-          </div>
-        ))}
+            </motion.div>
+          ))}
+        </div>
       </div>
+
+      {/* → Next arrow */}
+      <motion.button
+        whileHover={{ scale: 1.08 }}
+        whileTap={{ scale: 0.92 }}
+        onClick={() => scrollBy(1)}
+        className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center active:scale-95"
+        style={{
+          background: "rgba(255,255,255,0.88)",
+          backdropFilter: "blur(16px)",
+          boxShadow:
+            "0 4px 16px rgba(29,78,216,0.12), 0 1px 0 rgba(255,255,255,0.8) inset",
+          border: "1.5px solid rgba(255,255,255,0.95)",
+        }}
+      >
+        <ChevronRight className="w-4 h-4" style={{ color: "#1d4ed8" }} />
+      </motion.button>
     </div>
   );
 }
@@ -1317,6 +1549,627 @@ const testimonials = [
     result: "Masters admission — University of Edinburgh",
   },
 ];
+// ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// §4 OUTCOMES — Apple-grade, sky-blue bg, gradient headings, smooth cards
+// ─────────────────────────────────────────────
+function OutcomesSection() {
+  const stats = [
+    { val: "1.8M+", label: "Active Learners", icon: "🎓", glow: "#1d4ed8" },
+    { val: "94%", label: "Exam Pass Rate", icon: "🎯", glow: "#0891b2" },
+    { val: "12K+", label: "Board Toppers", icon: "🏆", glow: "#b8922a" },
+    { val: "340+", label: "Expert Courses", icon: "📚", glow: "#059669" },
+    { val: "800+", label: "UPSC Selections", icon: "⭐", glow: "#7c3aed" },
+    { val: "₹50Cr", label: "Earned by Tutors", icon: "💎", glow: "#0284c7" },
+  ];
+
+  const journey = [
+    {
+      step: "01",
+      title: "Choose Your Path",
+      desc: "Board prep, competitive exams, or professional skills — all structured, all in one place.",
+      icon: "🗺️",
+    },
+    {
+      step: "02",
+      title: "Learn from Experts",
+      desc: "HD lectures, animated explainers, and live doubt sessions by IIT rankers and UPSC toppers.",
+      icon: "🎓",
+    },
+    {
+      step: "03",
+      title: "Practice & Test",
+      desc: "Adaptive mocks, previous year papers, and 24/7 doubt resolution — real exam simulation.",
+      icon: "⚡",
+    },
+    {
+      step: "04",
+      title: "Achieve & Certify",
+      desc: "Earn verified certificates, track milestones, and unlock career opportunities.",
+      icon: "🏆",
+    },
+  ];
+
+  return (
+    <section
+      className="py-24 overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(180deg,#e8f0fe 0%,#ddeeff 50%,#e4f0fb 100%)",
+      }}
+    >
+      <div className="max-w-7xl mx-auto px-6">
+        {/* ── Section header ── */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-60px" }}
+          variants={fadeUpStagger}
+          className="text-center mb-16"
+        >
+          <motion.div variants={fadeUpChild}>
+            <span
+              className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-6"
+              style={{
+                background: "rgba(255,255,255,0.7)",
+                color: "#1d4ed8",
+                border: "1px solid rgba(29,78,216,0.2)",
+                backdropFilter: "blur(8px)",
+              }}
+            >
+              ✦ The Results Speak
+            </span>
+          </motion.div>
+          <motion.h2
+            variants={fadeUpChild}
+            className="text-4xl md:text-5xl font-black mb-4 leading-tight tracking-tight"
+          >
+            Real outcomes.{" "}
+            <span
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "rgba(0,0,0,0)",
+                backgroundClip: "text",
+              }}
+            >
+              Measurable impact.
+            </span>
+          </motion.h2>
+          <motion.p
+            variants={fadeUpChild}
+            className="text-base font-medium max-w-xl mx-auto leading-relaxed"
+            style={{ color: "#475569" }}
+          >
+            From Class 9 boards to UPSC and IIM — every number here is a student
+            who transformed their future with VSintellecta.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          variants={fadeUpStagger}
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-24"
+        >
+          {stats.map((s, i) => (
+            <motion.div
+              key={i}
+              variants={fadeUpChild}
+              whileHover={{
+                y: -8,
+                scale: 1.04,
+                boxShadow: `0 20px 40px ${s.glow}22`,
+              }}
+              transition={{ type: "spring", stiffness: 300, damping: 22 }}
+              className="flex flex-col items-center text-center p-5 rounded-[1.75rem] cursor-default"
+              style={{
+                background: "rgba(255,255,255,0.75)",
+                backdropFilter: "blur(20px)",
+                border: "1.5px solid rgba(255,255,255,0.9)",
+                boxShadow:
+                  "0 4px 24px rgba(29,78,216,0.07), 0 1px 0 rgba(255,255,255,0.8) inset",
+              }}
+            >
+              <div className="text-2xl mb-3">{s.icon}</div>
+              <p
+                className="text-2xl font-black mb-0.5"
+                style={{
+                  backgroundImage: `linear-gradient(180deg,${s.glow} 40%,${s.glow}99 100%)`,
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "rgba(0,0,0,0)",
+                  backgroundClip: "text",
+                  fontFamily: "'Sora',system-ui",
+                }}
+              >
+                {s.val}
+              </p>
+              <p
+                className="text-[11px] font-semibold leading-tight"
+                style={{ color: "#64748b" }}
+              >
+                {s.label}
+              </p>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* ── Journey steps ── */}
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-40px" }}
+          variants={fadeUpStagger}
+        >
+          <motion.div variants={fadeUpChild} className="text-center mb-12">
+            <h3 className="text-3xl md:text-4xl font-black tracking-tight mb-3">
+              <span
+                style={{
+                  backgroundImage:
+                    "linear-gradient(90deg,#0090F7 8%,#BA62FC,#F2416B,#F55600)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "rgba(0,0,0,0)",
+                  backgroundClip: "text",
+                }}
+              >
+                Your Learning Journey
+              </span>
+            </h3>
+            <p className="text-sm font-medium" style={{ color: "#64748b" }}>
+              Four steps from where you are, to where you want to be.
+            </p>
+          </motion.div>
+
+          <div className="relative">
+            {/* Connector dashes */}
+            <div className="hidden lg:flex absolute top-14 left-[12.5%] right-[12.5%] items-center justify-between pointer-events-none">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex-1 flex items-center gap-1 px-4">
+                  {Array.from({ length: 8 }).map((_, j) => (
+                    <div
+                      key={j}
+                      className="flex-1 h-px rounded-full"
+                      style={{ background: "rgba(29,78,216,0.2)" }}
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {journey.map((j, i) => (
+                <motion.div
+                  key={i}
+                  variants={fadeUpChild}
+                  whileHover={{
+                    y: -6,
+                    boxShadow: "0 20px 48px rgba(29,78,216,0.13)",
+                  }}
+                  transition={{ type: "spring", stiffness: 300, damping: 22 }}
+                  className="flex flex-col items-center text-center px-6 pt-7 pb-6 rounded-[2rem]"
+                  style={{
+                    background: "rgba(255,255,255,0.82)",
+                    backdropFilter: "blur(20px)",
+                    border: "1.5px solid rgba(255,255,255,0.95)",
+                    boxShadow:
+                      "0 4px 24px rgba(29,78,216,0.06), 0 1px 0 rgba(255,255,255,0.8) inset",
+                  }}
+                >
+                  <div className="relative mb-5">
+                    <div
+                      className="w-16 h-16 rounded-[1.25rem] flex items-center justify-center text-2xl"
+                      style={{
+                        background: "linear-gradient(135deg,#dbeafe,#bfdbfe)",
+                        boxShadow: "0 4px 16px rgba(29,78,216,0.15)",
+                      }}
+                    >
+                      {j.icon}
+                    </div>
+                    <span
+                      className="absolute -top-2 -right-2 w-7 h-7 rounded-full flex items-center justify-center text-[11px] font-black text-white"
+                      style={{
+                        background: "linear-gradient(135deg,#1d4ed8,#0284c7)",
+                        boxShadow: "0 3px 10px rgba(29,78,216,0.4)",
+                      }}
+                    >
+                      {j.step}
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-slate-900 text-sm mb-2 leading-snug">
+                    {j.title}
+                  </h4>
+                  <p
+                    className="text-xs font-medium leading-relaxed"
+                    style={{ color: "#64748b" }}
+                  >
+                    {j.desc}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+// §6 ROLE DASHBOARD PREVIEW — replaces "Free for learners. Transformative for educators."
+// Personalised based on auth state + role
+// ─────────────────────────────────────────────
+function RoleDashboardSection({ user, isLoggedIn, navigate }) {
+  const role = user?.role;
+
+  // Config per role (or guest)
+  const configs = {
+    user: {
+      badge: "Learner Dashboard",
+      heading: "Your learning, your pace.",
+      sub: "Pick up where you left off. Access your enrolled courses, track progress, and join live sessions — all from one clean dashboard.",
+      cta: "Continue Learning →",
+      ctaPath: "/dashboard",
+      color: "#1d4ed8",
+      bg: "linear-gradient(135deg,#eff6ff,#dbeafe)",
+      cards: [
+        {
+          label: "Courses Enrolled",
+          val: "3 Active",
+          icon: "📚",
+          col: "#1d4ed8",
+        },
+        { label: "Progress This Week", val: "62%", icon: "📈", col: "#0891b2" },
+        { label: "Certificates", val: "1 Earned", icon: "🏅", col: "#b8922a" },
+      ],
+    },
+    tutor: {
+      badge: "Educator Dashboard",
+      heading: "Teach. Earn. Inspire.",
+      sub: "Upload courses, schedule live classes, track student progress and revenue — your complete educator toolkit in one place.",
+      cta: "Go to Educator Hub →",
+      ctaPath: "/dashboard",
+      color: "#059669",
+      bg: "linear-gradient(135deg,#ecfdf5,#d1fae5)",
+      cards: [
+        { label: "Total Revenue", val: "₹2.4L", icon: "💰", col: "#059669" },
+        { label: "Active Scholars", val: "1,204", icon: "👨‍🎓", col: "#0891b2" },
+        { label: "Live Programs", val: "4 Active", icon: "📡", col: "#7c3aed" },
+      ],
+    },
+    admin: {
+      badge: "Admin Panel",
+      heading: "Platform at your fingertips.",
+      sub: "Moderate content, manage users, review tutor submissions, and keep the platform running at peak quality.",
+      cta: "Open Command Center →",
+      ctaPath: "/super-admin",
+      color: "#7c3aed",
+      bg: "linear-gradient(135deg,#f5f3ff,#ede9fe)",
+      cards: [
+        {
+          label: "Pending Reviews",
+          val: "12 Courses",
+          icon: "⚠️",
+          col: "#f59e0b",
+        },
+        { label: "Active Users", val: "24,592", icon: "👥", col: "#7c3aed" },
+        {
+          label: "Platform Revenue",
+          val: "₹1.2Cr",
+          icon: "📊",
+          col: "#059669",
+        },
+      ],
+    },
+    super_admin: {
+      badge: "Super Admin",
+      heading: "Total control, total clarity.",
+      sub: "Full platform oversight — traffic analytics, financial reports, team management, and the final approval gate for all content.",
+      cta: "Open Command Center →",
+      ctaPath: "/super-admin",
+      color: "#dc2626",
+      bg: "linear-gradient(135deg,#fef2f2,#fecaca)",
+      cards: [
+        { label: "Gross Revenue", val: "₹1.24Cr", icon: "💎", col: "#dc2626" },
+        { label: "Sub-Admins", val: "5 Active", icon: "🛡️", col: "#7c3aed" },
+        { label: "Platform Health", val: "99.9%", icon: "⚡", col: "#059669" },
+      ],
+    },
+  };
+
+  const guest = {
+    badge: null,
+    heading: null,
+    sub: null,
+    cta: null,
+    ctaPath: null,
+    color: "#1d4ed8",
+    bg: "linear-gradient(135deg,#eff6ff,#dbeafe)",
+    cards: [],
+  };
+
+  const cfg = isLoggedIn && configs[role] ? configs[role] : null;
+  const isGuestView = !cfg;
+
+  // If not logged in, show a split panel for learner vs tutor benefits
+  if (isGuestView) {
+    return (
+      <section
+        className="py-20"
+        style={{
+          background: "linear-gradient(180deg,#e8f2fe 0%,#ddeeff 100%)",
+        }}
+      >
+        <div className="max-w-6xl mx-auto px-6">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-60px" }}
+            variants={fadeUpStagger}
+            className="text-center mb-12"
+          >
+            <motion.h2
+              variants={fadeUpChild}
+              className="text-3xl font-extrabold text-slate-900 mb-3"
+            >
+              Built for every{" "}
+              <span
+                className="text-transparent bg-clip-text"
+                style={{
+                  backgroundImage: "linear-gradient(135deg,#1d4ed8,#0891b2)",
+                }}
+              >
+                kind of learner.
+              </span>
+            </motion.h2>
+            <motion.p
+              variants={fadeUpChild}
+              className="text-base text-slate-500 font-medium max-w-md mx-auto"
+            >
+              Whether you're here to learn or to teach — VSintellecta has a
+              dedicated space built just for you.
+            </motion.p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                role: "Learner",
+                emoji: "🎓",
+                color: "#1d4ed8",
+                bg: "white",
+                border: "rgba(29,78,216,0.12)",
+                headline: "Learn at your own pace.",
+                desc: "Access 340+ courses, join live doubt sessions, get personalised mock tests, and earn verified certificates — all in one beautiful platform.",
+                perks: [
+                  "Personal progress tracker",
+                  "Live doubt resolution",
+                  "Adaptive mock tests",
+                  "Verified certificates",
+                ],
+                cta: "Join Us & Start Learning",
+                ctaStyle: {
+                  background: "linear-gradient(135deg,#1d4ed8,#0284c7)",
+                  color: "white",
+                },
+              },
+              {
+                role: "Educator",
+                emoji: "📡",
+                color: "#059669",
+                bg: "linear-gradient(135deg,#050E2B,#0D1A3E)",
+                border: "rgba(2,132,199,0.2)",
+                headline: "Teach India. Earn from anywhere.",
+                desc: "Upload courses, schedule live classes, set your own pricing, and reach 1.8M+ motivated learners — with zero platform fee on your first ₹1L.",
+                perks: [
+                  "Own your pricing",
+                  "Live class scheduler",
+                  "Revenue analytics",
+                  "24h content review",
+                ],
+                cta: "Become an Educator",
+                ctaStyle: {
+                  background: "linear-gradient(135deg,#059669,#10b981)",
+                  color: "white",
+                },
+                dark: true,
+              },
+            ].map((c, i) => (
+              <motion.div
+                key={i}
+                variants={fadeUpChild}
+                whileHover={{ y: -4 }}
+                className="rounded-[2rem] p-8"
+                style={{
+                  background: c.bg,
+                  border: `1.5px solid ${c.border}`,
+                  boxShadow: c.dark
+                    ? "0 24px 60px rgba(29,78,216,0.2)"
+                    : "0 4px 24px rgba(29,78,216,0.06)",
+                }}
+              >
+                <div className="flex items-center gap-3 mb-5">
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl"
+                    style={{
+                      background: c.dark
+                        ? "rgba(255,255,255,0.08)"
+                        : `${c.color}12`,
+                    }}
+                  >
+                    {c.emoji}
+                  </div>
+                  <span
+                    className="text-xs font-black uppercase tracking-widest"
+                    style={{
+                      color: c.dark ? "rgba(255,255,255,0.45)" : c.color,
+                    }}
+                  >
+                    For {c.role}s
+                  </span>
+                </div>
+                <h3
+                  className="text-xl font-extrabold mb-3 leading-tight"
+                  style={{ color: c.dark ? "white" : "#0f172a" }}
+                >
+                  {c.headline}
+                </h3>
+                <p
+                  className="text-sm font-medium leading-relaxed mb-6"
+                  style={{
+                    color: c.dark ? "rgba(255,255,255,0.5)" : "#64748b",
+                  }}
+                >
+                  {c.desc}
+                </p>
+                <ul className="space-y-2 mb-7">
+                  {c.perks.map((p, pi) => (
+                    <li
+                      key={pi}
+                      className="flex items-center gap-2.5 text-sm font-medium"
+                      style={{
+                        color: c.dark ? "rgba(255,255,255,0.7)" : "#475569",
+                      }}
+                    >
+                      <CheckCircle
+                        className="w-4 h-4 shrink-0"
+                        style={{ color: c.color }}
+                      />
+                      {p}
+                    </li>
+                  ))}
+                </ul>
+                <motion.button
+                  whileHover={{ scale: 1.02, y: -1 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate("/login")}
+                  className="w-full py-3 rounded-2xl text-sm font-bold"
+                  style={{
+                    ...c.ctaStyle,
+                    boxShadow: `0 4px 16px ${c.color}35`,
+                  }}
+                >
+                  {c.cta} →
+                </motion.button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  // Logged-in personalised view
+  return (
+    <section
+      className="py-16"
+      style={{ background: "linear-gradient(180deg,#e4f0fd,#ddeeff)" }}
+    >
+      <div className="max-w-6xl mx-auto px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: "-60px" }}
+          transition={{ duration: 0.7 }}
+          className="rounded-[2.5rem] overflow-hidden relative"
+          style={{
+            background: "linear-gradient(145deg,#050E2B,#0D1A3E)",
+            border: "1px solid rgba(29,78,216,0.2)",
+            boxShadow: "0 24px 80px rgba(29,78,216,0.2)",
+          }}
+        >
+          {/* Glow */}
+          <div
+            className="absolute top-0 right-0 w-[400px] h-[400px] rounded-full pointer-events-none"
+            style={{
+              background: `radial-gradient(circle,${cfg.color}22,transparent 65%)`,
+              transform: "translate(30%,-30%)",
+            }}
+          />
+          <div
+            className="absolute bottom-0 left-0 w-[300px] h-[300px] rounded-full pointer-events-none"
+            style={{
+              background:
+                "radial-gradient(circle,rgba(0,194,255,0.07),transparent 60%)",
+            }}
+          />
+
+          <div className="relative z-10 p-8 md:p-12">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+              {/* Left */}
+              <div>
+                <span
+                  className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest mb-5"
+                  style={{
+                    background: `${cfg.color}20`,
+                    color: cfg.color,
+                    border: `1px solid ${cfg.color}35`,
+                  }}
+                >
+                  <Sparkles className="w-3 h-3" /> {cfg.badge}
+                </span>
+                <h2 className="text-2xl md:text-3xl font-extrabold text-white mb-4 leading-tight">
+                  Welcome back,
+                  <br />
+                  <span style={{ color: cfg.color }}>
+                    {user?.first_name || user?.firstName || "there"} 👋
+                  </span>
+                </h2>
+                <p className="text-slate-400 text-base font-medium mb-7 leading-relaxed">
+                  {cfg.sub}
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  onClick={() => navigate(cfg.ctaPath)}
+                  className="px-7 py-3.5 rounded-2xl text-sm font-bold text-white"
+                  style={{
+                    background: `linear-gradient(135deg,${cfg.color},${cfg.color}CC)`,
+                    boxShadow: `0 6px 20px ${cfg.color}40`,
+                  }}
+                >
+                  {cfg.cta}
+                </motion.button>
+              </div>
+              {/* Right: mini stat cards */}
+              <div className="grid grid-cols-3 gap-3">
+                {cfg.cards.map((card, ci) => (
+                  <motion.div
+                    key={ci}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: ci * 0.12 }}
+                    whileHover={{ y: -3 }}
+                    className="rounded-2xl p-4 text-center"
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    <div className="text-2xl mb-2">{card.icon}</div>
+                    <p
+                      className="text-base font-black text-white mb-0.5"
+                      style={{ color: card.col }}
+                    >
+                      {card.val}
+                    </p>
+                    <p
+                      className="text-[10px] font-medium"
+                      style={{ color: "rgba(255,255,255,0.35)" }}
+                    >
+                      {card.label}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
 
 // ─────────────────────────────────────────────
 // MAIN
@@ -1327,13 +2180,21 @@ export default function LandingPage() {
   const [activeCourse, setActiveCourse] = useState(null);
   const [activePath, setActivePath] = useState(null);
 
+  // Scroll to top on mount — prevents refresh landing on FAQ section
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
   useEffect(() => {
     document.body.style.overflow =
       activeCourse || activePath ? "hidden" : "auto";
   }, [activeCourse, activePath]);
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F] font-sans selection:bg-blue-200 overflow-clip">
+    <div
+      className="min-h-screen bg-[#FBFBFD] text-[#1D1D1F] font-sans selection:bg-blue-200 overflow-hidden"
+      style={{ background: "#eaf2ff" }}
+    >
       <Header />
 
       <AnimatePresence>
@@ -1351,7 +2212,13 @@ export default function LandingPage() {
               exit={{ scale: 0.95, y: 16, opacity: 0 }}
               transition={{ type: "spring", damping: 28, stiffness: 320 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-5xl bg-white rounded-[2rem] shadow-2xl relative p-7 flex flex-col md:flex-row gap-7 border-4 border-blue-600"
+              className="w-full max-w-5xl rounded-[2rem] shadow-2xl relative p-7 flex flex-col md:flex-row gap-7"
+              style={{
+                background: "rgba(255,255,255,0.97)",
+                backdropFilter: "blur(24px)",
+                border: "2px solid rgba(29,78,216,0.15)",
+                boxShadow: "0 32px 80px rgba(29,78,216,0.25)",
+              }}
             >
               <button
                 onClick={() => setActiveCourse(null)}
@@ -1527,7 +2394,7 @@ export default function LandingPage() {
         style={{
           position: "relative",
           width: "100%",
-          minHeight: "50vh",
+          // minHeight: "50vh",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
@@ -1602,7 +2469,11 @@ export default function LandingPage() {
                     .getElementById("courses-section")
                     ?.scrollIntoView({ behavior: "smooth" })
                 }
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-xl shadow-blue-700/30 transition-all hover:-translate-y-0.5 text-sm flex items-center gap-2"
+                className="px-6 py-3 text-white font-bold rounded-xl transition-all hover:-translate-y-0.5 text-sm flex items-center gap-2"
+                style={{
+                  background: "linear-gradient(135deg,#1d4ed8,#0284c7)",
+                  boxShadow: "0 8px 24px rgba(29,78,216,0.4)",
+                }}
               >
                 Browse Courses <ArrowRight className="w-4 h-4" />
               </button>
@@ -1657,7 +2528,11 @@ export default function LandingPage() {
       {/* §2 CAROUSEL */}
       <section
         id="courses-section"
-        className="relative bg-slate-50 border-b border-slate-200/60 py-14"
+        className="relative py-14"
+        style={{
+          background: "linear-gradient(180deg,#deeeff 0%,#e4f2ff 100%)",
+          borderBottom: "1px solid rgba(29,78,216,0.08)",
+        }}
       >
         <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-blue-300/40 to-transparent" />
         <motion.div
@@ -1670,21 +2545,36 @@ export default function LandingPage() {
           <div>
             <motion.p
               variants={fadeUpChild}
-              className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-1"
+              className="text-[10px] font-black uppercase tracking-widest mb-2"
+              style={{ color: "#0284c7", letterSpacing: "0.2em" }}
             >
               Featured Courses
             </motion.p>
             <motion.h2
               variants={fadeUpChild}
-              className="text-2xl md:text-3xl font-extrabold text-slate-900"
+              className="text-2xl md:text-3xl font-black tracking-tight"
             >
-              Learn from India's best educators
+              <span
+                style={{
+                  backgroundImage:
+                    "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "rgba(0,0,0,0)",
+                  backgroundClip: "text",
+                }}
+              >
+                The latest.
+              </span>{" "}
+              <span style={{ color: "#475569", fontWeight: 500 }}>
+                India's best educators, right now.
+              </span>
             </motion.h2>
           </div>
           <motion.button
             variants={fadeUpChild}
             onClick={() => navigate("/explore")}
-            className="hidden sm:flex items-center gap-1.5 text-sm font-bold text-blue-600 hover:text-blue-700 transition-colors"
+            className="hidden sm:flex items-center gap-1.5 text-sm font-semibold transition-all hover:gap-2.5"
+            style={{ color: "#1d4ed8" }}
           >
             View all <ArrowRight className="w-4 h-4" />
           </motion.button>
@@ -1769,87 +2659,17 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* §4 FEATURES */}
-      <section className="py-16 bg-sky-50 overflow-hidden">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            variants={fadeUpStagger}
-            className="text-center mb-12"
-          >
-            <motion.p
-              variants={fadeUpChild}
-              className="text-[10px] font-black uppercase tracking-widest text-blue-600 mb-2"
-            >
-              Why VSintellecta
-            </motion.p>
-            <motion.h2
-              variants={fadeUpChild}
-              className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3"
-            >
-              Learning that actually works.
-            </motion.h2>
-            <motion.p
-              variants={fadeUpChild}
-              className="text-base text-slate-500 font-medium max-w-xl mx-auto"
-            >
-              Built by rank-holders and veteran educators — every feature
-              engineered for results.
-            </motion.p>
-          </motion.div>
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-40px" }}
-            variants={fadeUpStagger}
-            className="grid grid-cols-1 md:grid-cols-3 gap-6"
-          >
-            {[
-              {
-                title: "Smart Video Lectures",
-                desc: "3D animations, worked examples, and concept maps by rank-holding educators. Never a monotone slide deck.",
-                icon: <MonitorPlay className="w-8 h-8 text-white" />,
-                bg: "bg-gradient-to-br from-blue-600 to-cyan-500",
-              },
-              {
-                title: "Adaptive Mock Tests",
-                desc: "Board-pattern quizzes that adapt to your weak zones. Simulate real exam environments with surgical precision.",
-                icon: <Target className="w-8 h-8 text-white" />,
-                bg: "bg-gradient-to-br from-slate-700 to-slate-900",
-              },
-              {
-                title: "Expert Doubt Resolution",
-                desc: "Connect with subject mentors and a 1.8M-strong community within minutes of posting your question.",
-                icon: <Users className="w-8 h-8 text-white" />,
-                bg: "bg-gradient-to-br from-emerald-500 to-teal-600",
-              },
-            ].map((item, idx) => (
-              <motion.div
-                key={idx}
-                variants={fadeUpChild}
-                className="bg-white/60 backdrop-blur-xl border border-white/50 shadow-xl shadow-slate-200/50 rounded-[2rem] p-7 hover:-translate-y-1.5 hover:bg-white/90 transition-all duration-400 group cursor-pointer"
-              >
-                <div
-                  className={`w-16 h-16 ${item.bg} rounded-2xl flex items-center justify-center mb-6 shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300`}
-                >
-                  {item.icon}
-                </div>
-                <h4 className="text-lg font-bold text-slate-900 mb-2">
-                  {item.title}
-                </h4>
-                <p className="text-slate-600 font-medium leading-relaxed text-sm">
-                  {item.desc}
-                </p>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
-      </section>
+      {/* ════════════════════ §4 OUTCOMES (new section) ════════════════════ */}
+      <OutcomesSection />
 
+      {/* ════════════════════ §5 TESTIMONIALS ════════════════════ */}
       {/* §5 TESTIMONIALS */}
-      <section className="py-16 bg-white overflow-hidden">
+      <section
+        className="py-20 overflow-hidden"
+        style={{
+          background: "linear-gradient(180deg,#e4eeff 0%,#ddeeff 100%)",
+        }}
+      >
         <div className="max-w-7xl mx-auto px-6">
           <motion.div
             initial="hidden"
@@ -1859,22 +2679,39 @@ export default function LandingPage() {
             className="text-center mb-10"
           >
             <motion.div variants={fadeUpChild}>
-              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-bold mb-4">
+              <span
+                className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-5"
+                style={{
+                  background: "rgba(255,255,255,0.75)",
+                  color: "#059669",
+                  border: "1px solid rgba(5,150,105,0.2)",
+                  backdropFilter: "blur(8px)",
+                }}
+              >
                 <Award className="w-3.5 h-3.5" /> Real results. Real names.
               </span>
             </motion.div>
             <motion.h2
               variants={fadeUpChild}
-              className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-3"
+              className="text-3xl md:text-4xl font-black mb-3 tracking-tight"
             >
               Trusted by toppers{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">
+              <span
+                style={{
+                  backgroundImage:
+                    "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "rgba(0,0,0,0)",
+                  backgroundClip: "text",
+                }}
+              >
                 across India.
               </span>
             </motion.h2>
             <motion.p
               variants={fadeUpChild}
-              className="text-base text-slate-500 font-medium max-w-lg mx-auto"
+              className="text-base font-medium max-w-lg mx-auto leading-relaxed"
+              style={{ color: "#475569" }}
             >
               From board exams to civil services — our learners don't just
               study, they transform.
@@ -1894,98 +2731,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* §6 THE PROMISE */}
-      <section className="py-14 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-60px" }}
-            variants={fadeUp}
-            className="bg-slate-900 rounded-[2.5rem] p-10 md:p-14 relative overflow-hidden shadow-2xl border border-slate-800"
-          >
-            <div className="absolute top-0 right-0 w-[350px] h-[350px] bg-blue-500/20 rounded-full blur-[90px] pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-cyan-500/10 rounded-full blur-[70px] pointer-events-none" />
-            <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
-              <div>
-                <h2 className="text-3xl md:text-4xl font-extrabold text-white mb-5 leading-tight">
-                    learners.
-                  <br />
-                  <span className="text-blue-400">
-                    Transformative for educators.
-                  </span>
-                </h2>
-                <p className="text-base text-slate-300 mb-6 font-medium leading-relaxed">
-                  Foundational content is free for every learner. For educators,
-                  our creator tools turn knowledge into a scalable, monetisable
-                  asset.
-                </p>
-                <ul className="space-y-3 mb-7">
-                  {[
-                    {
-                      icon: (
-                        <CheckCircle className="w-5 h-5 text-emerald-500 shrink-0" />
-                      ),
-                      text: "Foundational courses —  for every student",
-                    },
-                    {
-                      icon: (
-                        <MonitorPlay className="w-5 h-5 text-blue-400 shrink-0" />
-                      ),
-                      text: "HD streaming across phones, tablets, and laptops",
-                    },
-                    {
-                      icon: (
-                        <UploadCloud className="w-5 h-5 text-cyan-400 shrink-0" />
-                      ),
-                      text: "Creator panel — upload, price, publish, and earn",
-                    },
-                  ].map((li, i) => (
-                    <li
-                      key={i}
-                      className="flex items-center gap-3 text-white font-medium text-sm"
-                    >
-                      {li.icon}
-                      {li.text}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  onClick={() => navigate(isLoggedIn ? "/dashboard" : "/login")}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/25 transition-all hover:-translate-y-0.5 text-sm"
-                >
-                  {isLoggedIn ? "Go to Dashboard →" : "Become an Educator →"}
-                </button>
-              </div>
-              <div className="flex justify-center">
-                <motion.div
-                  whileInView={{ rotate: 0 }}
-                  initial={{ rotate: 4 }}
-                  transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-                  viewport={{ once: true }}
-                  className="w-full max-w-xs aspect-square bg-white/5 backdrop-blur-2xl rounded-[2.5rem] border border-white/10 p-7 flex flex-col justify-between shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-400 rounded-xl flex items-center justify-center shadow-lg">
-                      <Users className="w-6 h-6 text-white" />
-                    </div>
-                    <span className="bg-white/10 text-white text-[10px] font-bold px-2.5 py-1 rounded-full backdrop-blur-md">
-                      Educator Dashboard
-                    </span>
-                  </div>
-                  <div>
-                    <div className="h-1.5 w-1/3 bg-white/20 rounded-full mb-2.5" />
-                    <div className="h-1.5 w-3/4 bg-white/20 rounded-full mb-5" />
-                    <h4 className="text-2xl font-black text-white">
-                      Upload. Publish. Earn.
-                    </h4>
-                  </div>
-                </motion.div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
+      {/* ════════════════════ §6 ROLE DASHBOARD PREVIEW (new section) ════════════════════ */}
+      <RoleDashboardSection
+        user={user}
+        isLoggedIn={isLoggedIn}
+        navigate={navigate}
+      />
 
       {/* §7 FAQ — new split chat design */}
       <FaqChatSection />

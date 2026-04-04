@@ -110,7 +110,7 @@ export default function Dashboard() {
   }, [activeCategory]);
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] text-slate-800 font-sans overflow-x-hidden">
+    <div className="min-h-screen text-slate-800 font-sans overflow-x-hidden" style={{ background: "linear-gradient(160deg,#eaf2ff 0%,#f0f6ff 60%,#e4eeff 100%)" }}>
       <Header />
 
       <main>
@@ -162,7 +162,8 @@ export default function Dashboard() {
               </div>
 
               <svg
-                className="absolute bottom-[-1px] w-full h-16 md:h-32 text-[#FBFBFD]"
+                className="absolute bottom-[-1px] w-full h-16 md:h-32"
+                style={{ color: "#eaf2ff" }}
                 preserveAspectRatio="none"
                 viewBox="0 0 1440 320"
                 fill="currentColor"

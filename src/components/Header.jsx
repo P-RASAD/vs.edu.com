@@ -25,7 +25,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CartService } from "../services/api";
 
-// ── Animated VS Logo component ──────────────────────────────────────────────
 function VSLogo({ size = 38 }) {
   return (
     <svg
@@ -254,11 +253,15 @@ export default function Header() {
     <>
       <header
         className={`sticky top-0 left-0 right-0 z-50 transition-all duration-400 ${
-          isScrolled
-            ? "bg-white/95 backdrop-blur-2xl shadow-[0_2px_24px_rgba(0,0,0,0.08)] py-3"
-            : "bg-white/85 backdrop-blur-xl py-3.5"
+          isScrolled ? "backdrop-blur-2xl py-3" : "backdrop-blur-xl py-3.5"
         }`}
-        style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}
+        style={{
+          background: isScrolled
+            ? "rgba(220,237,255,0.96)"
+            : "rgba(234,242,255,0.88)",
+          borderBottom: "1px solid rgba(29,78,216,0.1)",
+          boxShadow: isScrolled ? "0 4px 24px rgba(29,78,216,0.1)" : "none",
+        }}
       >
         <div className="max-w-[1440px] mx-auto px-5 flex items-center justify-between gap-5">
           {/* ── LOGO ── */}
@@ -347,16 +350,17 @@ export default function Header() {
                     transition={{ duration: 0.18 }}
                     className="absolute top-full left-0 mt-2.5 w-72 rounded-2xl overflow-hidden z-50"
                     style={{
-                      background: "white",
-                      border: "1px solid rgba(0,0,0,0.07)",
-                      boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
+                      background: "rgba(240,248,255,0.97)",
+                      backdropFilter: "blur(24px)",
+                      border: "1.5px solid rgba(29,78,216,0.12)",
+                      boxShadow: "0 20px 60px rgba(29,78,216,0.15)",
                     }}
                   >
                     <div
                       className="px-4 py-3 flex items-center gap-2"
                       style={{
-                        borderBottom: "1px solid rgba(0,0,0,0.05)",
-                        background: "#f8faff",
+                        borderBottom: "1px solid rgba(29,78,216,0.08)",
+                        background: "#ddeeff",
                       }}
                     >
                       <Sparkles
@@ -379,7 +383,7 @@ export default function Header() {
                             navigate("/explore");
                             setIsCategoryOpen(false);
                           }}
-                          whileHover={{ x: 3, backgroundColor: "#f0f4ff" }}
+                          whileHover={{ x: 3, backgroundColor: "#ddeeff" }}
                           className="px-4 py-3 flex items-center gap-3 cursor-pointer transition-colors group"
                           style={{
                             borderBottom:
@@ -427,7 +431,7 @@ export default function Header() {
                 onBlur={() => setTimeout(() => setIsSearchOpen(false), 200)}
                 className="w-full pl-11 pr-4 py-2.5 rounded-2xl text-sm font-medium focus:outline-none transition-all"
                 style={{
-                  background: "rgba(248,250,255,0.9)",
+                  background: "rgba(224,238,255,0.9)",
                   border: isSearchOpen
                     ? "1.5px solid rgba(29,78,216,0.4)"
                     : "1.5px solid rgba(0,0,0,0.08)",
@@ -449,16 +453,17 @@ export default function Header() {
                   transition={{ duration: 0.15 }}
                   className="absolute top-full left-0 right-0 mt-2 rounded-2xl overflow-hidden z-50"
                   style={{
-                    background: "white",
-                    border: "1px solid rgba(0,0,0,0.07)",
-                    boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
+                    background: "rgba(240,248,255,0.97)",
+                    backdropFilter: "blur(24px)",
+                    border: "1.5px solid rgba(29,78,216,0.12)",
+                    boxShadow: "0 20px 60px rgba(29,78,216,0.15)",
                   }}
                 >
                   <div
                     className="px-4 py-3 flex items-center gap-2"
                     style={{
-                      background: "#f8faff",
-                      borderBottom: "1px solid rgba(0,0,0,0.05)",
+                      background: "#ddeeff",
+                      borderBottom: "1px solid rgba(29,78,216,0.08)",
                     }}
                   >
                     <TrendingUp
@@ -477,7 +482,7 @@ export default function Header() {
                       <div
                         key={idx}
                         onClick={() => navigate("/explore")}
-                        className="flex items-center justify-between px-3 py-2.5 hover:bg-blue-50 rounded-xl cursor-pointer group transition-colors"
+                        className="flex items-center justify-between px-3 py-2.5 hover:bg-[#ddeeff] rounded-xl cursor-pointer group transition-colors"
                       >
                         <span className="text-sm font-semibold text-slate-700 group-hover:text-blue-700">
                           {course.title}
@@ -513,7 +518,7 @@ export default function Header() {
                 whileHover={{ scale: 1.06 }}
                 whileTap={{ scale: 0.94 }}
                 onClick={() => navigate("/checkout")}
-                className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-blue-50"
+                className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-[#ddeeff]"
                 style={{ border: "1.5px solid rgba(0,0,0,0.07)" }}
               >
                 <ShoppingCart className="w-4 h-4 text-slate-600" />
@@ -535,7 +540,7 @@ export default function Header() {
                     setIsNotiOpen(!isNotiOpen);
                     setIsProfileOpen(false);
                   }}
-                  className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-blue-50"
+                  className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-[#ddeeff]"
                   style={{ border: "1.5px solid rgba(0,0,0,0.07)" }}
                 >
                   <Bell className="w-4 h-4 text-slate-600" />
@@ -553,16 +558,17 @@ export default function Header() {
                       transition={{ duration: 0.18 }}
                       className="absolute right-0 mt-2.5 w-80 rounded-2xl overflow-hidden z-50"
                       style={{
-                        background: "white",
-                        border: "1px solid rgba(0,0,0,0.07)",
-                        boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
+                        background: "rgba(240,248,255,0.97)",
+                        backdropFilter: "blur(24px)",
+                        border: "1.5px solid rgba(29,78,216,0.12)",
+                        boxShadow: "0 20px 60px rgba(29,78,216,0.15)",
                       }}
                     >
                       <div
                         className="px-5 py-3.5 flex justify-between items-center"
                         style={{
-                          borderBottom: "1px solid rgba(0,0,0,0.05)",
-                          background: "#f8faff",
+                          borderBottom: "1px solid rgba(29,78,216,0.08)",
+                          background: "#ddeeff",
                         }}
                       >
                         <div className="flex items-center gap-2">
@@ -592,7 +598,7 @@ export default function Header() {
                         {notifications.map((n) => (
                           <div
                             key={n.id}
-                            className="p-4 flex gap-3 cursor-pointer hover:bg-slate-50 transition-colors"
+                            className="p-4 flex gap-3 cursor-pointer hover:bg-blue-50/60 transition-colors"
                             style={{
                               borderBottom: "1px solid rgba(0,0,0,0.04)",
                             }}
@@ -659,17 +665,19 @@ export default function Header() {
                       transition={{ duration: 0.18 }}
                       className="absolute right-0 mt-2.5 w-64 rounded-2xl overflow-hidden z-50"
                       style={{
-                        background: "white",
-                        border: "1px solid rgba(0,0,0,0.07)",
-                        boxShadow: "0 20px 60px rgba(0,0,0,0.12)",
+                        background: "rgba(240,248,255,0.97)",
+                        backdropFilter: "blur(24px)",
+                        border: "1.5px solid rgba(29,78,216,0.12)",
+                        boxShadow: "0 20px 60px rgba(29,78,216,0.15)",
                       }}
                     >
                       {/* Profile header */}
                       <div
                         className="px-5 py-4"
                         style={{
-                          background: `linear-gradient(135deg,${PRIMARY}08,${CYAN}06)`,
-                          borderBottom: "1px solid rgba(0,0,0,0.05)",
+                          background:
+                            "linear-gradient(135deg,rgba(29,78,216,0.1),rgba(2,132,199,0.06))",
+                          borderBottom: "1px solid rgba(29,78,216,0.1)",
                         }}
                       >
                         <div className="flex items-center gap-3">
@@ -724,7 +732,7 @@ export default function Header() {
                                 navigate(item.path);
                                 setIsProfileOpen(false);
                               }}
-                              whileHover={{ x: 3, backgroundColor: "#f0f4ff" }}
+                              whileHover={{ x: 3, backgroundColor: "#ddeeff" }}
                               className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer group transition-all"
                             >
                               <div
@@ -826,9 +834,10 @@ export default function Header() {
             exit={{ opacity: 0, y: -8 }}
             className="fixed top-[60px] left-0 w-full z-40 md:hidden overflow-hidden"
             style={{
-              background: "white",
-              borderBottom: "1px solid rgba(0,0,0,0.07)",
-              boxShadow: "0 20px 60px rgba(0,0,0,0.10)",
+              background: "rgba(234,242,255,0.97)",
+              backdropFilter: "blur(24px)",
+              borderBottom: "1px solid rgba(29,78,216,0.1)",
+              boxShadow: "0 20px 60px rgba(29,78,216,0.12)",
             }}
           >
             <div className="p-4 space-y-1">
@@ -840,8 +849,8 @@ export default function Header() {
                   placeholder="Search courses..."
                   className="w-full pl-11 pr-4 py-3 rounded-2xl text-sm font-medium outline-none"
                   style={{
-                    background: "#f8faff",
-                    border: "1.5px solid rgba(0,0,0,0.07)",
+                    background: "rgba(220,237,255,0.8)",
+                    border: "1.5px solid rgba(29,78,216,0.15)",
                     color: "#0f172a",
                   }}
                 />
@@ -865,7 +874,7 @@ export default function Header() {
                     navigate(item.path);
                     setIsMobileOpen(false);
                   }}
-                  className="w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-colors hover:bg-blue-50"
+                  className="w-full text-left px-4 py-3 rounded-xl text-sm font-bold transition-colors hover:bg-[#ddeeff]"
                   style={{ color: item.color }}
                 >
                   {item.label}
@@ -890,12 +899,25 @@ export default function Header() {
                         navigate("/login");
                         setIsMobileOpen(false);
                       }}
+                      className="flex-1 py-3 rounded-xl text-sm font-bold text-center"
+                      style={{
+                        border: "1.5px solid rgba(0,0,0,0.08)",
+                        color: "#0f172a",
+                      }}
+                    >
+                      Log In
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate("/login");
+                        setIsMobileOpen(false);
+                      }}
                       className="flex-1 py-3 rounded-xl text-sm font-bold text-white text-center"
                       style={{
                         background: `linear-gradient(135deg,${PRIMARY},${CYAN})`,
                       }}
                     >
-                      Log In
+                      Get Started
                     </button>
                   </div>
                 )}

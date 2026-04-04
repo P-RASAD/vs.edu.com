@@ -58,38 +58,41 @@ import { AdminService, CourseService } from "./services/api";
 // BRAND TOKENS — VSintellecta
 // ─────────────────────────────────────────────
 const B = {
-  primary: "#0057FF",
-  cyan: "#00C2FF",
-  dark: "#050E2B",
-  surface: "rgba(255,255,255,0.04)",
-  border: "rgba(255,255,255,0.08)",
+  primary: "#1d4ed8",
+  cyan: "#0284c7",
+  dark: "#0f172a",
+  surface: "#ffffff",
+  border: "rgba(29,78,216,0.09)",
+  bg: "linear-gradient(160deg,#ddeeff 0%,#e4f2ff 45%,#d8e8ff 100%)",
+  sidebar: "#ffffff",
+  sidebarBorder: "rgba(29,78,216,0.09)",
 };
 
 const GLOW = {
-  overview: "#0057FF",
-  courses: "#00C2FF",
+  overview: "#1d4ed8",
+  courses: "#0284c7",
   moderation: "#f59e0b",
   approval: "#dc2626",
-  users: "#8b5cf6",
-  finance: "#10b981",
-  traffic: "#06b6d4",
+  users: "#7c3aed",
+  finance: "#059669",
+  traffic: "#0891b2",
 };
 
 const toastOK = {
   borderRadius: "12px",
-  background: B.dark,
+  background: "#0f172a",
   color: "#fff",
   fontSize: "13px",
   fontWeight: 600,
-  border: "1px solid rgba(0,194,255,0.3)",
+  border: "1px solid rgba(29,78,216,0.3)",
 };
 const toastErr = {
   borderRadius: "12px",
-  background: "#1a0a0a",
-  color: "#f87171",
+  background: "#fff1f2",
+  color: "#e11d48",
   fontSize: "13px",
   fontWeight: 600,
-  border: "1px solid #7f1d1d",
+  border: "1px solid #fecdd3",
 };
 
 const pV = {
@@ -97,6 +100,78 @@ const pV = {
   in: { opacity: 1, y: 0 },
   out: { opacity: 0, y: -8 },
 };
+
+// ─── VSLogo — matches Header.jsx exactly ────────────────────────────────────
+function VSLogo({ size = 32 }) {
+  return (
+    <svg
+      width={size}
+      height={Math.round(size * 0.91)}
+      viewBox="0 0 44 40"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{ flexShrink: 0 }}
+    >
+      <defs>
+        <linearGradient
+          id="saLogoGrad"
+          x1="0"
+          y1="0"
+          x2="44"
+          y2="40"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#1d4ed8" />
+          <stop offset="60%" stopColor="#0284c7" />
+          <stop offset="100%" stopColor="#0891b2" />
+        </linearGradient>
+        <linearGradient
+          id="saLogoGlow"
+          x1="0"
+          y1="0"
+          x2="44"
+          y2="40"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+          <stop offset="100%" stopColor="#06b6d4" stopOpacity="0.2" />
+        </linearGradient>
+        <filter id="saLogoShadow" x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow
+            dx="0"
+            dy="2"
+            stdDeviation="2"
+            floodColor="#1d4ed8"
+            floodOpacity="0.3"
+          />
+        </filter>
+      </defs>
+      <rect
+        width="44"
+        height="40"
+        rx="11"
+        fill="url(#saLogoGrad)"
+        filter="url(#saLogoShadow)"
+      />
+      <rect width="44" height="20" rx="11" fill="url(#saLogoGlow)" />
+      <polyline
+        points="11,10 19.5,27 28,10"
+        stroke="white"
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <path
+        d="M31 13.5 C27.5 10,21.5 10.5,21.5 15 C21.5 19,31 18.5,31 23 C31 27.5,25 29,21.5 26.5"
+        stroke="#7dd3fc"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
 
 // ── Mini sparkline ──
 const Sparkline = ({ data, color }) => {
@@ -355,7 +430,7 @@ export default function SuperAdmin() {
       className="flex h-screen overflow-hidden font-sans"
       style={{
         background:
-          "linear-gradient(135deg,#02050f 0%,#050E2B 50%,#030818 100%)",
+          "linear-gradient(160deg,#ddeeff 0%,#e4f2ff 45%,#d8e8ff 100%)",
       }}
     >
       <Toaster position="top-right" />
@@ -368,56 +443,31 @@ export default function SuperAdmin() {
         transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         className="h-full flex flex-col shrink-0 relative z-30 overflow-hidden"
         style={{
-          background:
-            "linear-gradient(180deg,rgba(0,87,255,0.09),rgba(5,14,43,0.96))",
-          borderRight: `1px solid ${B.border}`,
+          background: "rgba(255,255,255,0.97)",
+          borderRight: "1.5px solid rgba(29,78,216,0.12)",
+          boxShadow: "4px 0 32px rgba(29,78,216,0.12)",
           backdropFilter: "blur(40px)",
         }}
       >
         {/* ── Logo ── */}
         <div
           className="h-14 flex items-center px-3.5 gap-3 shrink-0 cursor-pointer"
-          style={{ borderBottom: `1px solid ${B.border}` }}
+          style={{ borderBottom: `1px solid ${B.sidebarBorder}` }}
           onClick={() => navigate("/")}
         >
-          <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 relative overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
+          <motion.div
+            className="rounded-[11px] cursor-pointer"
+            animate={{
+              boxShadow: [
+                "0 0 0 0 rgba(29,78,216,0)",
+                "0 0 0 6px rgba(29,78,216,0.1)",
+                "0 0 0 0 rgba(29,78,216,0)",
+              ],
             }}
+            transition={{ duration: 3.5, repeat: Infinity, ease: "easeInOut" }}
           >
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(circle at 30% 25%,rgba(255,255,255,0.3),transparent 60%)",
-              }}
-            />
-            {/* VS SVG Logo */}
-            <svg
-              width="20"
-              height="18"
-              viewBox="0 0 44 40"
-              fill="none"
-              className="relative z-10"
-            >
-              <polyline
-                points="12,10 20,28 28,10"
-                stroke="white"
-                strokeWidth="3.2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                fill="none"
-              />
-              <path
-                d="M30 14 C26 10,20 10,20 15 C20 19,30 19,30 24 C30 29,24 30,20 27"
-                stroke="#38bdf8"
-                strokeWidth="2.4"
-                strokeLinecap="round"
-                fill="none"
-              />
-            </svg>
-          </div>
+            <VSLogo size={32} />
+          </motion.div>
           <AnimatePresence>
             {sidebarOpen && (
               <motion.div
@@ -425,14 +475,35 @@ export default function SuperAdmin() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -6 }}
               >
-                <p className="text-[14px] font-black tracking-tight text-white leading-none">
-                  <span style={{ color: B.cyan }}>VS</span>intellecta
+                <p
+                  className="text-[14px] font-black tracking-tight leading-none"
+                  style={{
+                    fontFamily: "'Sora','DM Sans',system-ui,sans-serif",
+                    color: "#0f172a",
+                  }}
+                >
+                  <span style={{ color: "#0284c7" }}>VS</span>intellecta
                 </p>
                 <p
-                  className="text-[9px] font-bold uppercase tracking-[0.18em] mt-0.5"
-                  style={{ color: "rgba(0,194,255,0.45)" }}
+                  style={{
+                    fontSize: 8,
+                    fontWeight: 800,
+                    letterSpacing: "0.2em",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 2,
+                    marginTop: 2,
+                  }}
                 >
-                  {roleLabel}
+                  <span style={{ color: "#b8922a" }}>Learn</span>
+                  <span style={{ color: "rgba(0,0,0,0.2)", fontSize: "4px" }}>
+                    ◆
+                  </span>
+                  <span style={{ color: "#d4a843" }}>Grow</span>
+                  <span style={{ color: "rgba(0,0,0,0.2)", fontSize: "4px" }}>
+                    ◆
+                  </span>
+                  <span style={{ color: "#b8922a" }}>Lead</span>
                 </p>
               </motion.div>
             )}
@@ -448,8 +519,8 @@ export default function SuperAdmin() {
               exit={{ opacity: 0 }}
               className="mx-3 mt-3 px-3 py-2 rounded-xl flex items-center gap-2.5"
               style={{
-                background: "rgba(16,185,129,0.08)",
-                border: "1px solid rgba(16,185,129,0.2)",
+                background: "rgba(236,253,245,0.9)",
+                border: "1px solid rgba(16,185,129,0.25)",
               }}
             >
               <Pulse color="#10b981" />
@@ -474,7 +545,7 @@ export default function SuperAdmin() {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="px-3 text-[9px] font-black uppercase tracking-[0.2em] mb-3"
-                style={{ color: "rgba(255,255,255,0.2)" }}
+                style={{ color: "#cbd5e1" }}
               >
                 Command Center
               </motion.p>
@@ -494,8 +565,11 @@ export default function SuperAdmin() {
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
                 style={{
-                  background: isActive ? `${item.glow}18` : "transparent",
-                  border: `1px solid ${isActive ? `${item.glow}40` : "transparent"}`,
+                  background: isActive
+                    ? `linear-gradient(135deg,${item.glow},${item.glow}cc)`
+                    : "transparent",
+                  border: `1.5px solid ${isActive ? "transparent" : "transparent"}`,
+                  boxShadow: isActive ? `0 3px 14px ${item.glow}35` : "none",
                 }}
               >
                 {isActive && (
@@ -509,7 +583,7 @@ export default function SuperAdmin() {
                 <div className="relative z-10 w-5 h-5 flex items-center justify-center shrink-0">
                   <Icon
                     style={{
-                      color: isActive ? item.glow : "rgba(255,255,255,0.35)",
+                      color: isActive ? "white" : "#475569",
                       width: 17,
                       height: 17,
                     }}
@@ -526,7 +600,7 @@ export default function SuperAdmin() {
                       <span
                         className="text-xs font-bold truncate relative z-10"
                         style={{
-                          color: isActive ? "white" : "rgba(255,255,255,0.5)",
+                          color: isActive ? "white" : "#64748b",
                         }}
                       >
                         {item.label}
@@ -564,13 +638,16 @@ export default function SuperAdmin() {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="mx-3 mb-3 px-3 py-2.5 rounded-xl"
-              style={{ background: B.surface, border: `1px solid ${B.border}` }}
+              style={{
+                background: "rgba(255,255,255,0.88)",
+                border: "1.5px solid rgba(29,78,216,0.08)",
+              }}
             >
               <div className="flex items-center gap-2 mb-1.5">
                 <Shield style={{ width: 12, height: 12, color: B.cyan }} />
                 <p
                   className="text-[9px] font-black uppercase tracking-wider"
-                  style={{ color: "rgba(255,255,255,0.35)" }}
+                  style={{ color: "#94a3b8" }}
                 >
                   Your Sub-Admins
                 </p>
@@ -588,7 +665,7 @@ export default function SuperAdmin() {
               </div>
               <p
                 className="text-[9px] font-medium"
-                style={{ color: "rgba(255,255,255,0.25)" }}
+                style={{ color: "#94a3b8" }}
               >
                 {subAdmins.filter((a) => a.status === "online").length} online ·{" "}
                 {subAdmins.length} total
@@ -600,11 +677,14 @@ export default function SuperAdmin() {
         {/* ── User pill + collapse toggle ── */}
         <div
           className="p-2 shrink-0"
-          style={{ borderTop: `1px solid ${B.border}` }}
+          style={{ borderTop: "1.5px solid rgba(29,78,216,0.08)" }}
         >
           <div
             className="flex items-center gap-2.5 p-2.5 rounded-xl mb-1.5"
-            style={{ background: B.surface, border: `1px solid ${B.border}` }}
+            style={{
+              background: "rgba(255,255,255,0.88)",
+              border: "1.5px solid rgba(29,78,216,0.08)",
+            }}
           >
             <div
               className="w-8 h-8 rounded-xl flex items-center justify-center text-xs font-black text-white shrink-0"
@@ -622,12 +702,12 @@ export default function SuperAdmin() {
                   exit={{ opacity: 0 }}
                   className="flex-1 min-w-0"
                 >
-                  <p className="text-xs font-bold text-white truncate">
+                  <p className="text-xs font-bold text-slate-900 truncate">
                     {userName}
                   </p>
                   <p
                     className="text-[9px] font-medium truncate"
-                    style={{ color: "rgba(0,194,255,0.55)" }}
+                    style={{ color: "#0284c7" }}
                   >
                     {roleDesc}
                   </p>
@@ -649,7 +729,7 @@ export default function SuperAdmin() {
           <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="w-full py-1 rounded-xl text-[9px] font-bold flex items-center justify-center gap-1 hover:bg-white/5 transition-all"
-            style={{ color: "rgba(255,255,255,0.2)" }}
+            style={{ color: "#cbd5e1" }}
           >
             <ChevronRight
               style={{ width: 11, height: 11 }}
@@ -669,13 +749,13 @@ export default function SuperAdmin() {
           <div
             className="absolute -top-40 left-1/3 w-[600px] h-[300px] rounded-full blur-[120px]"
             style={{
-              background: `${GLOW[activeTab] || B.primary}14`,
+              background: `${GLOW[activeTab] || "#1d4ed8"}0a`,
               transition: "background 0.5s",
             }}
           />
           <div
             className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full blur-[100px]"
-            style={{ background: "rgba(0,194,255,0.04)" }}
+            style={{ background: "rgba(29,78,216,0.03)" }}
           />
         </div>
 
@@ -683,9 +763,10 @@ export default function SuperAdmin() {
         <header
           className="h-[52px] px-6 flex items-center justify-between shrink-0 relative z-10"
           style={{
-            borderBottom: `1px solid ${B.border}`,
-            background: "rgba(5,14,43,0.7)",
+            borderBottom: "1px solid rgba(29,78,216,0.12)",
+            background: "rgba(215,235,255,0.92)",
             backdropFilter: "blur(24px)",
+            boxShadow: "0 2px 16px rgba(29,78,216,0.07)",
           }}
         >
           <div className="flex items-center gap-3">
@@ -700,17 +781,26 @@ export default function SuperAdmin() {
                   },
                 },
               )}
-            <h2 className="text-sm font-black text-white">
+            <h2
+              className="text-sm font-black"
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "rgba(0,0,0,0)",
+                backgroundClip: "text",
+              }}
+            >
               {navItems.find((n) => n.id === activeTab)?.label}
             </h2>
             <span
               className="text-[9px] font-bold px-2 py-0.5 rounded-full"
               style={{
                 background: isSuperAdmin
-                  ? "rgba(220,38,38,0.15)"
-                  : "rgba(139,92,246,0.15)",
-                color: isSuperAdmin ? "#f87171" : "#a78bfa",
-                border: `1px solid ${isSuperAdmin ? "rgba(220,38,38,0.3)" : "rgba(139,92,246,0.3)"}`,
+                  ? "rgba(220,38,38,0.1)"
+                  : "rgba(124,58,237,0.1)",
+                color: isSuperAdmin ? "#dc2626" : "#7c3aed",
+                border: `1px solid ${isSuperAdmin ? "rgba(220,38,38,0.2)" : "rgba(124,58,237,0.2)"}`,
               }}
             >
               {roleLabel}
@@ -721,10 +811,17 @@ export default function SuperAdmin() {
             {/* Live users counter */}
             <div
               className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl"
-              style={{ background: B.surface, border: `1px solid ${B.border}` }}
+              style={{
+                background: "rgba(255,255,255,0.88)",
+                border: "1.5px solid rgba(29,78,216,0.1)",
+                boxShadow: "0 1px 8px rgba(29,78,216,0.05)",
+              }}
             >
               <Pulse color={B.cyan} />
-              <span className="text-[10px] font-bold" style={{ color: B.cyan }}>
+              <span
+                className="text-[10px] font-bold"
+                style={{ color: "#0284c7" }}
+              >
                 2,847 active now
               </span>
             </div>
@@ -739,7 +836,7 @@ export default function SuperAdmin() {
                   transform: "translateY(-50%)",
                   width: 13,
                   height: 13,
-                  color: "rgba(255,255,255,0.3)",
+                  color: "#64748b",
                 }}
               />
               <input
@@ -747,9 +844,10 @@ export default function SuperAdmin() {
                 placeholder="Search platform..."
                 className="pl-8 pr-4 py-1.5 rounded-xl text-xs font-medium focus:outline-none w-40 transition-all"
                 style={{
-                  background: B.surface,
-                  border: `1px solid ${B.border}`,
-                  color: "white",
+                  background: "rgba(255,255,255,0.88)",
+                  border: "1.5px solid rgba(29,78,216,0.1)",
+                  color: "#0f172a",
+                  boxShadow: "0 1px 8px rgba(29,78,216,0.05)",
                 }}
                 onFocus={(e) => (e.target.style.borderColor = B.cyan)}
                 onBlur={(e) => (e.target.style.borderColor = B.border)}
@@ -759,13 +857,16 @@ export default function SuperAdmin() {
             {/* Notifications */}
             <button
               className="relative w-8 h-8 rounded-xl flex items-center justify-center hover:bg-white/5 transition-all"
-              style={{ border: `1px solid ${B.border}` }}
+              style={{
+                border: "1.5px solid rgba(29,78,216,0.1)",
+                background: "rgba(255,255,255,0.88)",
+              }}
             >
               <Bell
                 style={{
                   width: 15,
                   height: 15,
-                  color: "rgba(255,255,255,0.45)",
+                  color: "#64748b",
                 }}
               />
               {pending.length > 0 && (
@@ -806,8 +907,8 @@ export default function SuperAdmin() {
                             key={i}
                             className="rounded-2xl p-5 animate-pulse"
                             style={{
-                              background: B.surface,
-                              border: `1px solid ${B.border}`,
+                              background: "rgba(255,255,255,0.88)",
+                              border: "1.5px solid rgba(29,78,216,0.08)",
                               height: 116,
                             }}
                           />
@@ -873,7 +974,7 @@ export default function SuperAdmin() {
                           whileHover={{ y: -2 }}
                           className="rounded-2xl p-5 relative overflow-hidden"
                           style={{
-                            background: `linear-gradient(135deg,${s.glow}12,${s.glow}06)`,
+                            background: `linear-gradient(135deg,${s.glow}16,${s.glow}09)`,
                             border: `1px solid ${s.glow}28`,
                           }}
                         >
@@ -911,16 +1012,25 @@ export default function SuperAdmin() {
                           </div>
                           <p
                             className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
-                            style={{ color: "rgba(255,255,255,0.3)" }}
+                            style={{ color: "#64748b" }}
                           >
                             {s.label}
                           </p>
-                          <p className="text-xl font-black text-white mb-0.5">
+                          <p
+                            className="text-xl font-black mb-0.5"
+                            style={{
+                              backgroundImage:
+                                "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                              WebkitBackgroundClip: "text",
+                              WebkitTextFillColor: "rgba(0,0,0,0)",
+                              backgroundClip: "text",
+                            }}
+                          >
                             {s.val}
                           </p>
                           <p
                             className="text-[10px] font-medium mb-1.5"
-                            style={{ color: "rgba(255,255,255,0.25)" }}
+                            style={{ color: "#94a3b8" }}
                           >
                             {s.sub}
                           </p>
@@ -958,8 +1068,8 @@ export default function SuperAdmin() {
                       key={i}
                       className="rounded-2xl px-4 py-3.5 flex items-center gap-4"
                       style={{
-                        background: B.surface,
-                        border: `1px solid ${B.border}`,
+                        background: "rgba(255,255,255,0.88)",
+                        border: "1.5px solid rgba(29,78,216,0.08)",
                       }}
                     >
                       <div
@@ -977,11 +1087,11 @@ export default function SuperAdmin() {
                         <div className="flex justify-between items-center mb-1.5">
                           <p
                             className="text-[10px] font-bold uppercase tracking-wider"
-                            style={{ color: "rgba(255,255,255,0.3)" }}
+                            style={{ color: "#64748b" }}
                           >
                             {s.label}
                           </p>
-                          <p className="text-xs font-black text-white">
+                          <p className="text-xs font-black text-slate-900">
                             {s.val}
                           </p>
                         </div>
@@ -1011,22 +1121,30 @@ export default function SuperAdmin() {
                   <div
                     className="rounded-2xl overflow-hidden"
                     style={{
-                      background: B.surface,
-                      border: `1px solid ${B.border}`,
+                      background: "rgba(255,255,255,0.88)",
+                      border: "1.5px solid rgba(29,78,216,0.08)",
                     }}
                   >
                     <div
                       className="px-5 py-3.5 flex items-center justify-between"
                       style={{
-                        borderBottom: `1px solid ${B.border}`,
-                        background: "rgba(0,87,255,0.06)",
+                        borderBottom: `1px solid rgba(29,78,216,0.08)`,
                       }}
                     >
                       <div className="flex items-center gap-2">
                         <Shield
                           style={{ width: 15, height: 15, color: B.cyan }}
                         />
-                        <p className="text-sm font-black text-white">
+                        <p
+                          className="text-sm font-black"
+                          style={{
+                            backgroundImage:
+                              "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "rgba(0,0,0,0)",
+                            backgroundClip: "text",
+                          }}
+                        >
                           Your Admin Team
                         </p>
                         <span
@@ -1042,14 +1160,17 @@ export default function SuperAdmin() {
                       </div>
                       <button
                         onClick={() => setActiveTab("users")}
-                        className="text-[10px] font-bold flex items-center gap-1 hover:text-white transition-colors"
-                        style={{ color: B.cyan }}
+                        className="text-[10px] font-bold flex items-center gap-1 hover:text-blue-700 transition-colors"
+                        style={{ color: "#0284c7" }}
                       >
                         View All{" "}
                         <ChevronRight style={{ width: 11, height: 11 }} />
                       </button>
                     </div>
-                    <div className="divide-y" style={{ borderColor: B.border }}>
+                    <div
+                      className="divide-y"
+                      style={{ borderColor: "rgba(29,78,216,0.07)" }}
+                    >
                       {subAdmins.slice(0, 3).map((a) => (
                         <div
                           key={a.id}
@@ -1069,12 +1190,12 @@ export default function SuperAdmin() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-white truncate">
+                            <p className="text-xs font-bold text-slate-900 truncate">
                               {a.name}
                             </p>
                             <p
                               className="text-[10px] truncate"
-                              style={{ color: "rgba(255,255,255,0.35)" }}
+                              style={{ color: "#94a3b8" }}
                             >
                               {a.region}
                             </p>
@@ -1084,20 +1205,16 @@ export default function SuperAdmin() {
                               <p className="font-black text-amber-400">
                                 {a.pending}
                               </p>
-                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
-                                Pending
-                              </p>
+                              <p style={{ color: "#94a3b8" }}>Pending</p>
                             </div>
                             <div>
                               <p
                                 className="font-black"
-                                style={{ color: B.cyan }}
+                                style={{ color: "#0284c7" }}
                               >
                                 {a.approved}
                               </p>
-                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
-                                Done
-                              </p>
+                              <p style={{ color: "#94a3b8" }}>Done</p>
                             </div>
                           </div>
                           <span
@@ -1113,18 +1230,27 @@ export default function SuperAdmin() {
                   <div
                     className="rounded-2xl overflow-hidden"
                     style={{
-                      background: B.surface,
-                      border: `1px solid ${B.border}`,
+                      background: "rgba(255,255,255,0.88)",
+                      border: "1.5px solid rgba(29,78,216,0.08)",
                     }}
                   >
                     <div
                       className="px-5 py-3.5 flex justify-between items-center"
                       style={{
-                        borderBottom: `1px solid ${B.border}`,
+                        borderBottom: `1px solid rgba(29,78,216,0.08)`,
                         background: "rgba(139,92,246,0.07)",
                       }}
                     >
-                      <p className="text-sm font-black text-white">
+                      <p
+                        className="text-sm font-black"
+                        style={{
+                          backgroundImage:
+                            "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "rgba(0,0,0,0)",
+                          backgroundClip: "text",
+                        }}
+                      >
                         Platform At a Glance
                       </p>
                       <span
@@ -1171,7 +1297,7 @@ export default function SuperAdmin() {
                           </p>
                           <p
                             className="text-[10px] font-medium mt-0.5"
-                            style={{ color: "rgba(255,255,255,0.35)" }}
+                            style={{ color: "#94a3b8" }}
                           >
                             {s.label}
                           </p>
@@ -1186,28 +1312,40 @@ export default function SuperAdmin() {
                   <div
                     className="rounded-2xl overflow-hidden"
                     style={{
-                      background: B.surface,
-                      border: `1px solid ${B.border}`,
+                      background: "rgba(255,255,255,0.88)",
+                      border: "1.5px solid rgba(29,78,216,0.08)",
                     }}
                   >
                     <div
                       className="px-5 py-3.5 flex justify-between items-center"
-                      style={{ borderBottom: `1px solid ${B.border}` }}
+                      style={{ borderBottom: `1px solid ${B.sidebarBorder}` }}
                     >
-                      <p className="text-sm font-black text-white">
+                      <p
+                        className="text-sm font-black"
+                        style={{
+                          backgroundImage:
+                            "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                          WebkitBackgroundClip: "text",
+                          WebkitTextFillColor: "rgba(0,0,0,0)",
+                          backgroundClip: "text",
+                        }}
+                      >
                         Recent Transactions
                       </p>
                       {isSuperAdmin && (
                         <button
                           onClick={() => setActiveTab("finance")}
-                          className="text-[10px] font-bold flex items-center gap-1 hover:text-white transition-colors"
-                          style={{ color: B.cyan }}
+                          className="text-[10px] font-bold flex items-center gap-1 hover:text-blue-700 transition-colors"
+                          style={{ color: "#0284c7" }}
                         >
                           All <ChevronRight style={{ width: 11, height: 11 }} />
                         </button>
                       )}
                     </div>
-                    <div className="divide-y" style={{ borderColor: B.border }}>
+                    <div
+                      className="divide-y"
+                      style={{ borderColor: "rgba(29,78,216,0.07)" }}
+                    >
                       {transactions.slice(0, 3).map((t, i) => (
                         <div
                           key={i}
@@ -1232,12 +1370,12 @@ export default function SuperAdmin() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-white truncate">
+                            <p className="text-xs font-bold text-slate-900 truncate">
                               {t.item}
                             </p>
                             <p
                               className="text-[10px]"
-                              style={{ color: "rgba(255,255,255,0.3)" }}
+                              style={{ color: "#64748b" }}
                             >
                               {t.user} · {t.date}
                             </p>
@@ -1275,12 +1413,21 @@ export default function SuperAdmin() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-black text-white">
+                    <h3
+                      className="text-base font-black"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "rgba(0,0,0,0)",
+                        backgroundClip: "text",
+                      }}
+                    >
                       All Platform Courses
                     </h3>
                     <p
                       className="text-[11px] mt-0.5"
-                      style={{ color: "rgba(255,255,255,0.35)" }}
+                      style={{ color: "#94a3b8" }}
                     >
                       {isSuperAdmin
                         ? "Super admin access — view all content without purchasing"
@@ -1309,8 +1456,8 @@ export default function SuperAdmin() {
                           key={i}
                           className="rounded-2xl animate-pulse"
                           style={{
-                            background: B.surface,
-                            border: `1px solid ${B.border}`,
+                            background: "rgba(255,255,255,0.88)",
+                            border: "1.5px solid rgba(29,78,216,0.08)",
                             height: 210,
                           }}
                         />
@@ -1327,8 +1474,8 @@ export default function SuperAdmin() {
                         whileHover={{ y: -3 }}
                         className="rounded-2xl overflow-hidden relative group"
                         style={{
-                          background: B.surface,
-                          border: `1px solid ${B.border}`,
+                          background: "rgba(255,255,255,0.88)",
+                          border: "1.5px solid rgba(29,78,216,0.08)",
                         }}
                       >
                         <div className="relative h-36 overflow-hidden">
@@ -1349,7 +1496,7 @@ export default function SuperAdmin() {
                                 style={{
                                   width: 32,
                                   height: 32,
-                                  color: "rgba(255,255,255,0.3)",
+                                  color: "#64748b",
                                 }}
                               />
                             </div>
@@ -1374,7 +1521,7 @@ export default function SuperAdmin() {
                             />
                             <span
                               className="text-[9px] font-black uppercase tracking-wider"
-                              style={{ color: B.cyan }}
+                              style={{ color: "#0284c7" }}
                             >
                               Free Access
                             </span>
@@ -1396,12 +1543,12 @@ export default function SuperAdmin() {
                           </div>
                         </div>
                         <div className="p-4">
-                          <h4 className="text-xs font-bold text-white leading-snug line-clamp-2 mb-1">
+                          <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2 mb-1">
                             {c.title}
                           </h4>
                           <p
                             className="text-[10px] mb-2.5"
-                            style={{ color: "rgba(255,255,255,0.35)" }}
+                            style={{ color: "#94a3b8" }}
                           >
                             {c.author || "Surabhi Dewra"}
                           </p>
@@ -1418,7 +1565,7 @@ export default function SuperAdmin() {
                               {c.rating || "4.8"}
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-white">
+                              <span className="text-xs font-black text-slate-900">
                                 {c.price}
                               </span>
                               <motion.button
@@ -1426,9 +1573,9 @@ export default function SuperAdmin() {
                                 onClick={() => setPreviewCourse(c)}
                                 className="px-2 py-0.5 rounded-lg text-[10px] font-bold"
                                 style={{
-                                  background: `${B.primary}25`,
-                                  color: B.cyan,
-                                  border: `1px solid ${B.primary}35`,
+                                  background: "rgba(29,78,216,0.08)",
+                                  color: "#1d4ed8",
+                                  border: "1.5px solid rgba(29,78,216,0.2)",
                                 }}
                               >
                                 Preview
@@ -1487,7 +1634,16 @@ export default function SuperAdmin() {
                         </div>
                         <div className="p-5 flex items-center justify-between">
                           <div>
-                            <h3 className="text-sm font-black text-white">
+                            <h3
+                              className="text-sm font-black"
+                              style={{
+                                backgroundImage:
+                                  "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "rgba(0,0,0,0)",
+                                backgroundClip: "text",
+                              }}
+                            >
                               {previewCourse.title}
                             </h3>
                             <p
@@ -1501,8 +1657,8 @@ export default function SuperAdmin() {
                             onClick={() => setPreviewCourse(null)}
                             className="w-8 h-8 rounded-xl flex items-center justify-center"
                             style={{
-                              background: B.surface,
-                              border: `1px solid ${B.border}`,
+                              background: "rgba(255,255,255,0.88)",
+                              border: "1.5px solid rgba(29,78,216,0.08)",
                             }}
                           >
                             <XCircle
@@ -1539,14 +1695,23 @@ export default function SuperAdmin() {
                   <div className="space-y-5">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="text-base font-black text-white">
+                        <h3
+                          className="text-base font-black"
+                          style={{
+                            backgroundImage:
+                              "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "rgba(0,0,0,0)",
+                            backgroundClip: "text",
+                          }}
+                        >
                           {activeTab === "approval"
                             ? "Final Approval Gate"
                             : "Moderation Queue"}
                         </h3>
                         <p
                           className="text-[11px] mt-0.5"
-                          style={{ color: "rgba(255,255,255,0.35)" }}
+                          style={{ color: "#94a3b8" }}
                         >
                           {activeTab === "approval"
                             ? "Pre-vetted by sub-admins — your final sign-off makes it live"
@@ -1563,7 +1728,7 @@ export default function SuperAdmin() {
                         className="flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all"
                         style={{
                           color: B.cyan,
-                          border: `1px solid ${B.border}`,
+                          border: "1.5px solid rgba(29,78,216,0.08)",
                         }}
                       >
                         <RefreshCw style={{ width: 13, height: 13 }} /> Refresh
@@ -1592,7 +1757,7 @@ export default function SuperAdmin() {
                       />
                       <p
                         className="text-xs font-medium"
-                        style={{ color: "rgba(255,255,255,0.55)" }}
+                        style={{ color: "#475569" }}
                       >
                         {activeTab === "approval"
                           ? "Super Admin Final Gate: Complete the 4-item checklist before approving. This action publishes the course immediately."
@@ -1606,8 +1771,8 @@ export default function SuperAdmin() {
                       <div
                         className="flex flex-col items-center py-20 text-center rounded-2xl"
                         style={{
-                          background: B.surface,
-                          border: `1px solid ${B.border}`,
+                          background: "rgba(255,255,255,0.88)",
+                          border: "1.5px solid rgba(29,78,216,0.08)",
                         }}
                       >
                         <div
@@ -1621,12 +1786,15 @@ export default function SuperAdmin() {
                             style={{ width: 28, height: 28, color: "#34d399" }}
                           />
                         </div>
-                        <p className="font-bold text-white text-sm">
+                        <p
+                          className="font-bold text-sm"
+                          style={{ color: "#0f172a" }}
+                        >
                           Queue is clear!
                         </p>
                         <p
                           className="text-[11px] mt-1"
-                          style={{ color: "rgba(255,255,255,0.35)" }}
+                          style={{ color: "#94a3b8" }}
                         >
                           No courses pending review.
                         </p>
@@ -1643,8 +1811,8 @@ export default function SuperAdmin() {
                               whileHover={{ y: -3 }}
                               className="rounded-2xl overflow-hidden flex flex-col"
                               style={{
-                                background: B.surface,
-                                border: `1px solid ${B.border}`,
+                                background: "rgba(255,255,255,0.88)",
+                                border: "1.5px solid rgba(29,78,216,0.08)",
                               }}
                             >
                               <div className="p-5 flex-1 flex flex-col">
@@ -1663,24 +1831,27 @@ export default function SuperAdmin() {
                                   </span>
                                   <span
                                     className="text-[9px] ml-auto flex items-center gap-1"
-                                    style={{ color: "rgba(255,255,255,0.3)" }}
+                                    style={{ color: "#64748b" }}
                                   >
                                     <Clock style={{ width: 9, height: 9 }} />
                                     {course.submitted}
                                   </span>
                                 </div>
-                                <h4 className="text-sm font-bold text-white leading-snug mb-1.5">
+                                <h4 className="text-sm font-bold text-slate-900 leading-snug mb-1.5">
                                   {course.title}
                                 </h4>
                                 <p
                                   className="text-[11px] line-clamp-2 mb-3"
-                                  style={{ color: "rgba(255,255,255,0.4)" }}
+                                  style={{ color: "#64748b" }}
                                 >
                                   {course.description}
                                 </p>
                                 <div
                                   className="space-y-1 mb-3 pt-3"
-                                  style={{ borderTop: `1px solid ${B.border}` }}
+                                  style={{
+                                    borderTop:
+                                      "1.5px solid rgba(29,78,216,0.08)",
+                                  }}
                                 >
                                   {[
                                     ["Tutor", course.instructor],
@@ -1694,12 +1865,12 @@ export default function SuperAdmin() {
                                       <span
                                         className="text-[10px] font-bold"
                                         style={{
-                                          color: "rgba(255,255,255,0.3)",
+                                          color: "#64748b",
                                         }}
                                       >
                                         {k}
                                       </span>
-                                      <span className="text-[10px] font-black text-white">
+                                      <span className="text-[10px] font-black text-slate-900">
                                         {v}
                                       </span>
                                     </div>
@@ -1805,29 +1976,44 @@ export default function SuperAdmin() {
                     initial={{ opacity: 0, scale: 0.98 }}
                     animate={{ opacity: 1, scale: 1 }}
                     className="rounded-2xl overflow-hidden"
-                    style={{ border: `1px solid ${B.border}` }}
+                    style={{
+                      border: "1.5px solid rgba(29,78,216,0.1)",
+                      background: "rgba(255,255,255,0.88)",
+                    }}
                   >
                     {/* Review header */}
                     <div
                       className="px-5 py-4 flex items-center justify-between"
                       style={{
                         background:
-                          "linear-gradient(135deg,rgba(0,87,255,0.2),rgba(0,194,255,0.08))",
-                        borderBottom: `1px solid ${B.border}`,
+                          "linear-gradient(135deg,rgba(29,78,216,0.06),rgba(2,132,199,0.03))",
+                        borderBottom: `1px solid rgba(29,78,216,0.08)`,
                       }}
                     >
                       <div className="flex items-center gap-3">
                         <button
                           onClick={() => setReviewingCourse(null)}
                           className="p-1.5 rounded-xl hover:bg-white/10 transition-all"
-                          style={{ border: `1px solid ${B.border}` }}
+                          style={{
+                            border: "1.5px solid rgba(29,78,216,0.1)",
+                            background: "rgba(255,255,255,0.88)",
+                          }}
                         >
                           <ArrowLeft
                             style={{ width: 16, height: 16, color: "white" }}
                           />
                         </button>
                         <div>
-                          <h3 className="text-sm font-black text-white">
+                          <h3
+                            className="text-sm font-black"
+                            style={{
+                              backgroundImage:
+                                "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                              WebkitBackgroundClip: "text",
+                              WebkitTextFillColor: "rgba(0,0,0,0)",
+                              backgroundClip: "text",
+                            }}
+                          >
                             {reviewingCourse.title}
                           </h3>
                           <p
@@ -1883,17 +2069,19 @@ export default function SuperAdmin() {
                         className="w-full lg:w-[300px] flex flex-col shrink-0"
                         style={{
                           background: "rgba(5,14,43,0.95)",
-                          borderLeft: `1px solid ${B.border}`,
+                          borderLeft: "1.5px solid rgba(29,78,216,0.08)",
                         }}
                       >
                         {/* Lesson list */}
                         <div
                           className="p-4 flex-1 overflow-y-auto hide-scrollbar"
-                          style={{ borderBottom: `1px solid ${B.border}` }}
+                          style={{
+                            borderBottom: `1px solid ${B.sidebarBorder}`,
+                          }}
                         >
                           <p
                             className="text-[10px] font-black uppercase tracking-wider mb-3"
-                            style={{ color: "rgba(255,255,255,0.3)" }}
+                            style={{ color: "#64748b" }}
                           >
                             Course Lessons
                           </p>
@@ -1935,9 +2123,7 @@ export default function SuperAdmin() {
                                     <p
                                       className="text-[11px] font-bold truncate"
                                       style={{
-                                        color: isAct
-                                          ? "white"
-                                          : "rgba(255,255,255,0.45)",
+                                        color: isAct ? "white" : "#475569",
                                       }}
                                     >
                                       {lesson.title}
@@ -1945,7 +2131,7 @@ export default function SuperAdmin() {
                                     <p
                                       className="text-[9px]"
                                       style={{
-                                        color: "rgba(255,255,255,0.25)",
+                                        color: "#94a3b8",
                                       }}
                                     >
                                       {lesson.duration}
@@ -1961,7 +2147,7 @@ export default function SuperAdmin() {
                         <div className="p-4">
                           <p
                             className="text-[10px] font-black uppercase tracking-wider mb-3 flex items-center gap-1.5"
-                            style={{ color: "rgba(255,255,255,0.3)" }}
+                            style={{ color: "#64748b" }}
                           >
                             <CheckSquare
                               style={{ width: 12, height: 12, color: B.cyan }}
@@ -1988,7 +2174,7 @@ export default function SuperAdmin() {
                                 className="flex items-center gap-2.5 cursor-pointer"
                               >
                                 <div
-                                  className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${checklist[k] ? "border-cyan-500 bg-cyan-500" : "border-white/20 bg-transparent"}`}
+                                  className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${checklist[k] ? "border-blue-500 bg-blue-500" : "border-slate-300 bg-white"}`}
                                   onClick={() =>
                                     setChecklist((p) => ({ ...p, [k]: !p[k] }))
                                   }
@@ -2006,9 +2192,7 @@ export default function SuperAdmin() {
                                 <span
                                   className="text-[11px] font-medium transition-colors"
                                   style={{
-                                    color: checklist[k]
-                                      ? "rgba(255,255,255,0.8)"
-                                      : "rgba(255,255,255,0.3)",
+                                    color: checklist[k] ? "#0f172a" : "#64748b",
                                   }}
                                 >
                                   {l}
@@ -2020,10 +2204,10 @@ export default function SuperAdmin() {
                           {/* Progress bar */}
                           <div className="mb-3">
                             <div className="flex justify-between text-[10px] font-bold mb-1">
-                              <span style={{ color: "rgba(255,255,255,0.3)" }}>
+                              <span style={{ color: "#64748b" }}>
                                 Checklist
                               </span>
-                              <span style={{ color: B.cyan }}>
+                              <span style={{ color: "#0284c7" }}>
                                 {
                                   Object.values(checklist).filter(Boolean)
                                     .length
@@ -2133,33 +2317,45 @@ export default function SuperAdmin() {
                   <div
                     className="rounded-2xl overflow-hidden"
                     style={{
-                      background: B.surface,
-                      border: `1px solid ${B.border}`,
+                      background: "rgba(255,255,255,0.88)",
+                      border: "1.5px solid rgba(29,78,216,0.08)",
                     }}
                   >
                     <div
                       className="px-5 py-4 flex items-center justify-between"
                       style={{
-                        borderBottom: `1px solid ${B.border}`,
-                        background: "rgba(0,87,255,0.06)",
+                        borderBottom: `1px solid rgba(29,78,216,0.08)`,
+                        background: "rgba(200,228,255,0.75)",
                       }}
                     >
                       <div className="flex items-center gap-2">
                         <Shield
                           style={{ width: 15, height: 15, color: B.cyan }}
                         />
-                        <p className="text-sm font-black text-white">
+                        <p
+                          className="text-sm font-black"
+                          style={{
+                            backgroundImage:
+                              "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "rgba(0,0,0,0)",
+                            backgroundClip: "text",
+                          }}
+                        >
                           Your Admin Team ({subAdmins.length})
                         </p>
                       </div>
                       <p
                         className="text-[10px] font-bold"
-                        style={{ color: "rgba(255,255,255,0.3)" }}
+                        style={{ color: "#64748b" }}
                       >
                         Managed by you · Final authority
                       </p>
                     </div>
-                    <div className="divide-y" style={{ borderColor: B.border }}>
+                    <div
+                      className="divide-y"
+                      style={{ borderColor: "rgba(29,78,216,0.07)" }}
+                    >
                       {subAdmins.map((a) => (
                         <motion.div
                           key={a.id}
@@ -2182,12 +2378,12 @@ export default function SuperAdmin() {
                             />
                           </div>
                           <div className="flex-1 min-w-0">
-                            <p className="text-xs font-bold text-white">
+                            <p className="text-xs font-bold text-slate-800">
                               {a.name}
                             </p>
                             <p
                               className="text-[10px]"
-                              style={{ color: "rgba(255,255,255,0.35)" }}
+                              style={{ color: "#94a3b8" }}
                             >
                               {a.email} · {a.region}
                             </p>
@@ -2197,20 +2393,16 @@ export default function SuperAdmin() {
                               <p className="font-black text-amber-400">
                                 {a.pending}
                               </p>
-                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
-                                Pending
-                              </p>
+                              <p style={{ color: "#94a3b8" }}>Pending</p>
                             </div>
                             <div>
                               <p
                                 className="font-black"
-                                style={{ color: B.cyan }}
+                                style={{ color: "#0284c7" }}
                               >
                                 {a.approved}
                               </p>
-                              <p style={{ color: "rgba(255,255,255,0.25)" }}>
-                                Approved
-                              </p>
+                              <p style={{ color: "#94a3b8" }}>Approved</p>
                             </div>
                           </div>
                           <span
@@ -2221,7 +2413,10 @@ export default function SuperAdmin() {
                           <div className="flex gap-1.5">
                             <button
                               className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-white/5 transition-all"
-                              style={{ border: `1px solid ${B.border}` }}
+                              style={{
+                                border: "1.5px solid rgba(29,78,216,0.1)",
+                                background: "rgba(255,255,255,0.88)",
+                              }}
                             >
                               <Eye
                                 style={{ width: 13, height: 13, color: B.cyan }}
@@ -2229,7 +2424,10 @@ export default function SuperAdmin() {
                             </button>
                             <button
                               className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-rose-500/10 transition-all"
-                              style={{ border: `1px solid ${B.border}` }}
+                              style={{
+                                border: "1.5px solid rgba(29,78,216,0.1)",
+                                background: "rgba(255,255,255,0.88)",
+                              }}
                             >
                               <Ban
                                 style={{
@@ -2250,15 +2448,24 @@ export default function SuperAdmin() {
                 <div
                   className="rounded-2xl overflow-hidden"
                   style={{
-                    background: B.surface,
-                    border: `1px solid ${B.border}`,
+                    background: "rgba(255,255,255,0.88)",
+                    border: "1.5px solid rgba(29,78,216,0.08)",
                   }}
                 >
                   <div
                     className="px-5 py-3.5 flex items-center justify-between"
-                    style={{ borderBottom: `1px solid ${B.border}` }}
+                    style={{ borderBottom: `1px solid ${B.sidebarBorder}` }}
                   >
-                    <p className="text-sm font-black text-white">
+                    <p
+                      className="text-sm font-black"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "rgba(0,0,0,0)",
+                        backgroundClip: "text",
+                      }}
+                    >
                       Platform Users
                     </p>
                     {loading && (
@@ -2272,8 +2479,7 @@ export default function SuperAdmin() {
                     <table className="w-full text-left">
                       <thead
                         style={{
-                          borderBottom: `1px solid ${B.border}`,
-                          background: "rgba(255,255,255,0.015)",
+                          borderBottom: `1px solid rgba(29,78,216,0.08)`,
                         }}
                       >
                         <tr>
@@ -2282,7 +2488,7 @@ export default function SuperAdmin() {
                               <th
                                 key={h}
                                 className="px-5 py-3 text-[10px] font-black uppercase tracking-wider"
-                                style={{ color: "rgba(255,255,255,0.2)" }}
+                                style={{ color: "#000000" }}
                               >
                                 {h}
                               </th>
@@ -2298,7 +2504,9 @@ export default function SuperAdmin() {
                               backgroundColor: "rgba(255,255,255,0.02)",
                             }}
                             className="transition-colors"
-                            style={{ borderBottom: `1px solid ${B.border}` }}
+                            style={{
+                              borderBottom: `1px solid ${B.sidebarBorder}`,
+                            }}
                           >
                             <td className="px-5 py-3.5">
                               <div className="flex items-center gap-3">
@@ -2311,12 +2519,12 @@ export default function SuperAdmin() {
                                   {u.name.charAt(0)}
                                 </div>
                                 <div>
-                                  <p className="text-xs font-bold text-white">
+                                  <p className="text-xs font-bold text-slate-800">
                                     {u.name}
                                   </p>
                                   <p
                                     className="text-[10px]"
-                                    style={{ color: "rgba(255,255,255,0.3)" }}
+                                    style={{ color: "#64748b" }}
                                   >
                                     {u.email}
                                   </p>
@@ -2357,7 +2565,7 @@ export default function SuperAdmin() {
                             </td>
                             <td
                               className="px-5 py-3.5 text-[11px] font-medium"
-                              style={{ color: "rgba(255,255,255,0.35)" }}
+                              style={{ color: "#94a3b8" }}
                             >
                               {u.joined}
                             </td>
@@ -2407,12 +2615,21 @@ export default function SuperAdmin() {
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-black text-white">
+                    <h3
+                      className="text-base font-black"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "rgba(0,0,0,0)",
+                        backgroundClip: "text",
+                      }}
+                    >
                       Site Traffic Analytics
                     </h3>
                     <p
                       className="text-[11px] mt-0.5"
-                      style={{ color: "rgba(255,255,255,0.35)" }}
+                      style={{ color: "#94a3b8" }}
                     >
                       Real-time platform monitoring
                     </p>
@@ -2421,7 +2638,7 @@ export default function SuperAdmin() {
                     <Pulse color={B.cyan} />
                     <span
                       className="text-[11px] font-bold"
-                      style={{ color: B.cyan }}
+                      style={{ color: "#0284c7" }}
                     >
                       Live · 30s refresh
                     </span>
@@ -2485,11 +2702,11 @@ export default function SuperAdmin() {
                       </div>
                       <p
                         className="text-[10px] font-bold uppercase tracking-wider mb-0.5"
-                        style={{ color: "rgba(255,255,255,0.3)" }}
+                        style={{ color: "#64748b" }}
                       >
                         {s.label}
                       </p>
-                      <p className="text-xl font-black text-white mb-1.5">
+                      <p className="text-xl font-black text-slate-900 mb-1.5">
                         {s.val}
                       </p>
                       <Sparkline data={s.spark} color={s.color} />
@@ -2501,12 +2718,21 @@ export default function SuperAdmin() {
                 <div
                   className="rounded-2xl p-6"
                   style={{
-                    background: B.surface,
-                    border: `1px solid ${B.border}`,
+                    background: "rgba(255,255,255,0.88)",
+                    border: "1.5px solid rgba(29,78,216,0.08)",
                   }}
                 >
                   <div className="flex justify-between items-center mb-5">
-                    <p className="text-sm font-black text-white">
+                    <p
+                      className="text-sm font-black"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "rgba(0,0,0,0)",
+                        backgroundClip: "text",
+                      }}
+                    >
                       Today's Traffic by Hour
                     </p>
                     <div className="flex items-center gap-1.5">
@@ -2516,7 +2742,7 @@ export default function SuperAdmin() {
                       />
                       <span
                         className="text-[10px] font-bold"
-                        style={{ color: B.cyan }}
+                        style={{ color: "#0284c7" }}
                       >
                         Page Views
                       </span>
@@ -2550,8 +2776,11 @@ export default function SuperAdmin() {
                               }}
                             >
                               <div
-                                className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
-                                style={{ border: `1px solid ${B.border}` }}
+                                className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[9px] font-bold px-1.5 py-0.5 rounded whitespace-nowrap"
+                                style={{
+                                  border: "1.5px solid rgba(29,78,216,0.1)",
+                                  background: "rgba(255,255,255,0.88)",
+                                }}
                               >
                                 {d.views.toLocaleString()}
                               </div>
@@ -2559,7 +2788,7 @@ export default function SuperAdmin() {
                           </div>
                           <span
                             className="text-[9px] font-bold"
-                            style={{ color: "rgba(255,255,255,0.25)" }}
+                            style={{ color: "#94a3b8" }}
                           >
                             {d.hour}h
                           </span>
@@ -2573,17 +2802,31 @@ export default function SuperAdmin() {
                 <div
                   className="rounded-2xl overflow-hidden"
                   style={{
-                    background: B.surface,
-                    border: `1px solid ${B.border}`,
+                    background: "rgba(255,255,255,0.88)",
+                    border: "1.5px solid rgba(29,78,216,0.08)",
                   }}
                 >
                   <div
                     className="px-5 py-3.5"
-                    style={{ borderBottom: `1px solid ${B.border}` }}
+                    style={{ borderBottom: `1px solid ${B.sidebarBorder}` }}
                   >
-                    <p className="text-sm font-black text-white">Top Pages</p>
+                    <p
+                      className="text-sm font-black"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "rgba(0,0,0,0)",
+                        backgroundClip: "text",
+                      }}
+                    >
+                      Top Pages
+                    </p>
                   </div>
-                  <div className="divide-y" style={{ borderColor: B.border }}>
+                  <div
+                    className="divide-y"
+                    style={{ borderColor: "rgba(29,78,216,0.07)" }}
+                  >
                     {[
                       { page: "/explore", views: "18,240", pct: 82 },
                       { page: "/course-detail", views: "12,880", pct: 58 },
@@ -2595,7 +2838,7 @@ export default function SuperAdmin() {
                         key={i}
                         className="px-5 py-3 flex items-center gap-4 hover:bg-white/2 transition-colors"
                       >
-                        <p className="text-xs font-bold text-white font-mono flex-1">
+                        <p className="text-xs font-bold text-slate-900 font-mono flex-1">
                           {p.page}
                         </p>
                         <div
@@ -2680,11 +2923,11 @@ export default function SuperAdmin() {
                       <div>
                         <p
                           className="text-[10px] font-bold uppercase tracking-wider"
-                          style={{ color: "rgba(255,255,255,0.3)" }}
+                          style={{ color: "#64748b" }}
                         >
                           {s.label}
                         </p>
-                        <p className="text-2xl font-black text-white">
+                        <p className="text-2xl font-black text-slate-900">
                           {s.val}
                         </p>
                         <p
@@ -2702,17 +2945,29 @@ export default function SuperAdmin() {
                 <div
                   className="rounded-2xl p-6"
                   style={{
-                    background: B.surface,
-                    border: `1px solid ${B.border}`,
+                    background: "rgba(255,255,255,0.88)",
+                    border: "1.5px solid rgba(29,78,216,0.08)",
                   }}
                 >
                   <div className="flex justify-between items-center mb-4">
-                    <p className="text-sm font-black text-white">
+                    <p
+                      className="text-sm font-black"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "rgba(0,0,0,0)",
+                        backgroundClip: "text",
+                      }}
+                    >
                       Monthly Revenue
                     </p>
                     <button
                       className="flex items-center gap-1.5 text-[11px] font-bold px-3 py-1.5 rounded-xl hover:bg-white/5 transition-all"
-                      style={{ color: B.cyan, border: `1px solid ${B.border}` }}
+                      style={{
+                        color: B.cyan,
+                        border: "1.5px solid rgba(29,78,216,0.08)",
+                      }}
                     >
                       <Download style={{ width: 13, height: 13 }} /> Export CSV
                     </button>
@@ -2737,7 +2992,7 @@ export default function SuperAdmin() {
                               background:
                                 i === 5
                                   ? `linear-gradient(180deg,${B.cyan},${B.primary})`
-                                  : `${B.primary}28`,
+                                  : "rgba(29,78,216,0.12)",
                               minHeight: 4,
                             }}
                           >
@@ -2745,7 +3000,7 @@ export default function SuperAdmin() {
                               className="absolute -top-7 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-black whitespace-nowrap px-1.5 py-0.5 rounded text-white"
                               style={{
                                 background: B.dark,
-                                border: `1px solid ${B.border}`,
+                                border: "1.5px solid rgba(29,78,216,0.08)",
                               }}
                             >
                               ₹{(h * 10500).toLocaleString("en-IN")}
@@ -2754,7 +3009,7 @@ export default function SuperAdmin() {
                         </div>
                         <span
                           className="text-[9px] font-bold"
-                          style={{ color: "rgba(255,255,255,0.25)" }}
+                          style={{ color: "#94a3b8" }}
                         >
                           {["Jan", "Feb", "Mar", "Apr", "May", "Jun"][i]}
                         </span>
@@ -2767,22 +3022,31 @@ export default function SuperAdmin() {
                 <div
                   className="rounded-2xl overflow-hidden"
                   style={{
-                    background: B.surface,
-                    border: `1px solid ${B.border}`,
+                    background: "rgba(255,255,255,0.88)",
+                    border: "1.5px solid rgba(29,78,216,0.08)",
                   }}
                 >
                   <div
                     className="px-5 py-3.5 flex items-center justify-between"
-                    style={{ borderBottom: `1px solid ${B.border}` }}
+                    style={{ borderBottom: `1px solid ${B.sidebarBorder}` }}
                   >
-                    <p className="text-sm font-black text-white">
+                    <p
+                      className="text-sm font-black"
+                      style={{
+                        backgroundImage:
+                          "linear-gradient(180deg,#004C94 45%,#297BC4 90%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor: "rgba(0,0,0,0)",
+                        backgroundClip: "text",
+                      }}
+                    >
                       All Transactions
                     </p>
                     <button
                       className="flex items-center gap-1.5 text-[10px] font-bold px-2.5 py-1.5 rounded-lg hover:bg-white/5 transition-all"
                       style={{
                         color: "rgba(255,255,255,0.4)",
-                        border: `1px solid ${B.border}`,
+                        border: "1.5px solid rgba(29,78,216,0.08)",
                       }}
                     >
                       <Filter style={{ width: 11, height: 11 }} /> Filter
@@ -2792,8 +3056,7 @@ export default function SuperAdmin() {
                     <table className="w-full text-left">
                       <thead
                         style={{
-                          borderBottom: `1px solid ${B.border}`,
-                          background: "rgba(255,255,255,0.015)",
+                          borderBottom: `1px solid rgba(29,78,216,0.08)`,
                         }}
                       >
                         <tr>
@@ -2808,7 +3071,7 @@ export default function SuperAdmin() {
                             <th
                               key={h}
                               className="px-5 py-3 text-[10px] font-black uppercase tracking-wider"
-                              style={{ color: "rgba(255,255,255,0.2)" }}
+                              style={{ color: "#000000" }}
                             >
                               {h}
                             </th>
@@ -2823,20 +3086,22 @@ export default function SuperAdmin() {
                               backgroundColor: "rgba(255,255,255,0.02)",
                             }}
                             className="transition-colors"
-                            style={{ borderBottom: `1px solid ${B.border}` }}
+                            style={{
+                              borderBottom: `1px solid ${B.sidebarBorder}`,
+                            }}
                           >
                             <td
                               className="px-5 py-3 text-[10px] font-black font-mono"
-                              style={{ color: "rgba(255,255,255,0.3)" }}
+                              style={{ color: "#64748b" }}
                             >
                               {t.id}
                             </td>
-                            <td className="px-5 py-3 text-xs font-bold text-white">
+                            <td className="px-5 py-3 text-xs font-bold text-slate-900">
                               {t.user}
                             </td>
                             <td
                               className="px-5 py-3 text-xs font-medium"
-                              style={{ color: "rgba(255,255,255,0.45)" }}
+                              style={{ color: "#64748b" }}
                             >
                               {t.item}
                             </td>
@@ -2849,7 +3114,7 @@ export default function SuperAdmin() {
                             </td>
                             <td
                               className="px-5 py-3 text-[11px] font-medium"
-                              style={{ color: "rgba(255,255,255,0.3)" }}
+                              style={{ color: "#64748b" }}
                             >
                               {t.date}
                             </td>

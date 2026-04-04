@@ -77,7 +77,7 @@ export default function CourseDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] font-sans text-slate-900 selection:bg-blue-200 flex flex-col">
+    <div className="min-h-screen font-sans text-slate-900 selection:bg-blue-200 flex flex-col" style={{ background: "linear-gradient(160deg,#eaf2ff 0%,#f0f6ff 60%,#e4eeff 100%)" }}>
       <Header />
 
       {/* ========================================== */}

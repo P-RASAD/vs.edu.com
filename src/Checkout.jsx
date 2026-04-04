@@ -126,7 +126,7 @@ export default function Checkout() {
   // ── Success screen ──
   if (step === "success") {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F2F4F8] p-4">
+      <div className="min-h-screen flex items-center justify-center p-4" style={{ background: "linear-gradient(160deg,#eaf2ff 0%,#f0f6ff 50%,#e4eeff 100%)" }}>
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -168,7 +168,7 @@ export default function Checkout() {
   }
 
   return (
-    <div className="h-screen w-full flex items-center justify-center bg-[#F2F4F8] font-sans selection:bg-blue-200 p-4 relative overflow-hidden">
+    <div className="h-screen w-full flex items-center justify-center font-sans selection:bg-blue-200 p-4 relative overflow-hidden" style={{ background: "linear-gradient(160deg,#eaf2ff 0%,#f0f6ff 50%,#e4eeff 100%)" }}>
       {/* Ambient orbs */}
       <div className="absolute inset-0 pointer-events-none z-0">
         <motion.div

@@ -161,7 +161,7 @@ export default function Explore() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FBFBFD] text-slate-900 font-sans selection:bg-blue-200 flex flex-col">
+    <div className="min-h-screen text-slate-900 font-sans selection:bg-blue-200 flex flex-col" style={{ background: "linear-gradient(160deg,#eaf2ff 0%,#f0f6ff 60%,#e4eeff 100%)" }}>
       <Header />
 
       {/* ── Hero search ── */}
