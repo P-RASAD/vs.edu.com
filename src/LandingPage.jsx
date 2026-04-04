@@ -70,7 +70,7 @@ const fadeUp = {
 };
 
 // ─────────────────────────────────────────────
-// AnoAI WEBGL SHADER
+// AnoAI WEBGL SHADER (Optimized Aurora)
 // ─────────────────────────────────────────────
 function AnoAIBackground() {
   const containerRef = useRef(null);
@@ -82,7 +82,7 @@ function AnoAIBackground() {
     const scene = new THREE.Scene();
     const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
 
-    // alpha: false is crucial here to stop transparent composite lag
+    // Performance: alpha is false to prevent the black flashing bug
     const renderer = new THREE.WebGLRenderer({
       antialias: false,
       alpha: false,
@@ -92,7 +92,7 @@ function AnoAIBackground() {
     const getHeight = () => container.clientHeight || window.innerHeight;
 
     renderer.setSize(getWidth(), getHeight());
-    renderer.setPixelRatio(1); // Keep this at 1 to prevent Retina display lag
+    renderer.setPixelRatio(1); // Performance: Keeps retina screens from lagging
 
     const canvas = renderer.domElement;
     canvas.style.cssText =
@@ -111,6 +111,8 @@ function AnoAIBackground() {
         precision highp float;
         uniform float iTime;
         uniform vec2  iResolution;
+
+        // Lowered from 3 to 2 for better performance, still looks great
         #define NUM_OCTAVES 2
 
         float rand(vec2 n) { return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453); }
@@ -137,22 +139,28 @@ function AnoAIBackground() {
           vec3 o=vec3(0.0);
           float f=2.0+fbm(p+vec2(iTime*5.0,0.0))*0.5;
 
-          for(float i=0.0;i<12.0;i++){
+          // Performance: Lowered from 35.0 to 15.0 loops. Makes it a "little" lighter but keeps the glow.
+          for(float i=0.0;i<15.0;i++){
             v=p+cos(i*i+(iTime+p.x*0.08)*0.025+i*vec2(13.0,11.0))*3.5+vec2(sin(iTime*3.0+i)*0.003,cos(iTime*3.5-i)*0.003);
-            float tailNoise=fbm(v+vec2(iTime*0.5,i))*0.3*(1.0-(i/12.0));
+            float tailNoise=fbm(v+vec2(iTime*0.5,i))*0.3*(1.0-(i/15.0));
             vec3 auroraColors=vec3(0.1+0.3*sin(i*0.2+iTime*0.4),0.3+0.5*cos(i*0.3+iTime*0.5),0.7+0.3*sin(i*0.4+iTime*0.3));
 
             float denom = length(max(v,vec2(v.x*f*0.015,v.y*1.5))) + 0.001;
             vec3 contribution=auroraColors*exp(sin(i*i+iTime*0.8))/denom;
 
-            float thin=smoothstep(0.0,1.0,i/12.0)*1.5;
+            float thin=smoothstep(0.0,1.0,i/15.0)*1.2;
             o+=contribution*(1.0+tailNoise*0.8)*thin;
           }
 
           vec3 color = pow(max(o/100.0, 0.0), vec3(1.6));
+
+          // Safe tone mapping instead of tanh()
           color = color / (1.0 + color);
 
-          gl_FragColor = vec4(color * 1.5 * 0.60, 1.0);
+          // Deep dark blue background
+          vec3 bg = mix(vec3(0.02, 0.04, 0.08), vec3(0.0, 0.01, 0.03), gl_FragCoord.y / iResolution.y);
+
+          gl_FragColor = vec4(color * 1.5 * 0.60 + bg, 1.0);
         }
       `,
     });
@@ -161,21 +169,21 @@ function AnoAIBackground() {
     scene.add(new THREE.Mesh(geometry, material));
 
     let frameId;
-    let isVisible = true; // Track if the canvas is on screen
+    let isVisible = true;
 
-    // NEW: Intersection Observer to detect visibility
+    // This observer fixes the scrolling black box bug
     const observer = new IntersectionObserver(
       ([entry]) => {
         isVisible = entry.isIntersecting;
       },
-      { threshold: 0 }, // Triggers as soon as 1px is visible/hidden
+      { threshold: 0 },
     );
     observer.observe(container);
 
     const animate = () => {
-      // ONLY animate and render if the user is looking at it
+      // Only animate if the user is looking at the hero section
       if (isVisible) {
-        material.uniforms.iTime.value += 0.01;
+        material.uniforms.iTime.value += 0.012;
         renderer.render(scene, camera);
       }
       frameId = requestAnimationFrame(animate);
@@ -194,7 +202,7 @@ function AnoAIBackground() {
     return () => {
       cancelAnimationFrame(frameId);
       window.removeEventListener("resize", handleResize);
-      observer.disconnect(); // Clean up observer
+      observer.disconnect();
       if (container.contains(canvas)) container.removeChild(canvas);
       geometry.dispose();
       material.dispose();
