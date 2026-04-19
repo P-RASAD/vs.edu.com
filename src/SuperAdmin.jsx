@@ -247,6 +247,8 @@ export default function SuperAdmin() {
   const [allCourses, setAllCourses] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCourse, setSelectedCourse] = useState(null);
+  const displayCourses = selectedCourse?.children || allCourses;
 
   // Boot — load everything
   useEffect(() => {
@@ -263,6 +265,7 @@ export default function SuperAdmin() {
         setUsers(u.data);
         setPending(p.data);
         setAllCourses(c.data);
+
         setTransactions(t.data);
       } catch {
         toast.error("Failed to load platform data", { style: toastErr });
@@ -1464,127 +1467,155 @@ export default function SuperAdmin() {
                       ))}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {allCourses.map((c, i) => (
-                      <motion.div
-                        key={c.id || i}
-                        initial={{ opacity: 0, y: 14 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: i * 0.05 }}
-                        whileHover={{ y: -3 }}
-                        className="rounded-2xl overflow-hidden relative group"
-                        style={{
-                          background: "rgba(255,255,255,0.88)",
-                          border: "1.5px solid rgba(29,78,216,0.08)",
-                        }}
+                  <div>
+                    {selectedCourse && (
+                      <button
+                        onClick={() => setSelectedCourse(null)}
+                        className="mb-4 text-xs text-blue-500 font-medium flex items-center gap-1 hover:text-blue-700 transition"
                       >
-                        <div className="relative h-36 overflow-hidden">
-                          {c.img ? (
-                            <img
-                              src={c.img}
-                              alt={c.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
-                          ) : (
-                            <div
-                              className="w-full h-full flex items-center justify-center"
-                              style={{
-                                background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
-                              }}
-                            >
-                              <BookOpen
-                                style={{
-                                  width: 32,
-                                  height: 32,
-                                  color: "#64748b",
-                                }}
+                        ← Back
+                      </button>
+                    )}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">                      
+                      {displayCourses.map((c, i) => (
+                        <motion.div
+                          key={c.id || i}
+                          initial={{ opacity: 0, y: 14 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: i * 0.05 }}
+                          whileHover={{ y: -3 }}
+                          onClick={() => {
+                            if (c.children) {
+                              setSelectedCourse(c); // go deeper
+                            }
+                          }}
+                          className="rounded-2xl overflow-hidden relative group cursor-pointer"
+                          style={{
+                            background: "rgba(255,255,255,0.88)",
+                            border: "1.5px solid rgba(29,78,216,0.08)",
+                          }}
+                        >
+                          <div className="relative h-36 overflow-hidden">
+                            {c.img ? (
+                              <img
+                                src={c.img}
+                                alt={c.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               />
-                            </div>
-                          )}
-                          <div
-                            className="absolute inset-0"
-                            style={{
-                              background:
-                                "linear-gradient(to bottom,transparent 40%,rgba(5,14,43,0.95) 100%)",
-                            }}
-                          />
-                          <div
-                            className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-lg"
-                            style={{
-                              background: "rgba(0,194,255,0.2)",
-                              backdropFilter: "blur(8px)",
-                              border: "1px solid rgba(0,194,255,0.3)",
-                            }}
-                          >
-                            <Unlock
-                              style={{ width: 10, height: 10, color: B.cyan }}
-                            />
-                            <span
-                              className="text-[9px] font-black uppercase tracking-wider"
-                              style={{ color: "#0284c7" }}
-                            >
-                              Free Access
-                            </span>
-                          </div>
-                          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <div
-                              className="w-10 h-10 rounded-full flex items-center justify-center"
-                              style={{ background: "rgba(0,87,255,0.8)" }}
-                            >
-                              <Play
+                            ) : (
+                              <div
+                                className="w-full h-full flex items-center justify-center"
                                 style={{
-                                  width: 16,
-                                  height: 16,
-                                  color: "white",
-                                  marginLeft: 2,
-                                }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-                        <div className="p-4">
-                          <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2 mb-1">
-                            {c.title}
-                          </h4>
-                          <p
-                            className="text-[10px] mb-2.5"
-                            style={{ color: "#94a3b8" }}
-                          >
-                            {c.author || "Surabhi Dewra"}
-                          </p>
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
-                              <Star
-                                style={{
-                                  width: 11,
-                                  height: 11,
-                                  fill: "#f59e0b",
-                                  color: "#f59e0b",
-                                }}
-                              />
-                              {c.rating || "4.8"}
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-black text-slate-900">
-                                {c.price}
-                              </span>
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                onClick={() => setPreviewCourse(c)}
-                                className="px-2 py-0.5 rounded-lg text-[10px] font-bold"
-                                style={{
-                                  background: "rgba(29,78,216,0.08)",
-                                  color: "#1d4ed8",
-                                  border: "1.5px solid rgba(29,78,216,0.2)",
+                                  background: `linear-gradient(135deg,${B.primary},${B.cyan})`,
                                 }}
                               >
-                                Preview
-                              </motion.button>
+                                <BookOpen
+                                  style={{
+                                    width: 32,
+                                    height: 32,
+                                    color: "#64748b",
+                                  }}
+                                />
+                              </div>
+                            )}
+
+                            <div
+                              className="absolute inset-0"
+                              style={{
+                                background:
+                                  "linear-gradient(to bottom,transparent 40%,rgba(5,14,43,0.95) 100%)",
+                              }}
+                            />
+
+                            <div
+                              className="absolute top-2.5 left-2.5 flex items-center gap-1.5 px-2 py-0.5 rounded-lg"
+                              style={{
+                                background: "rgba(0,194,255,0.2)",
+                                backdropFilter: "blur(8px)",
+                                border: "1px solid rgba(0,194,255,0.3)",
+                              }}
+                            >
+                              <Unlock style={{ width: 10, height: 10, color: B.cyan }} />
+                              <span
+                                className="text-[9px] font-black uppercase tracking-wider"
+                                style={{ color: "#0284c7" }}
+                              >
+                                {c.children ? "Explore" : "Free Access"}
+                              </span>
+                            </div>
+
+                            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div
+                                className="w-10 h-10 rounded-full flex items-center justify-center"
+                                style={{ background: "rgba(0,87,255,0.8)" }}
+                              >
+                                <Play
+                                  style={{
+                                    width: 16,
+                                    height: 16,
+                                    color: "white",
+                                    marginLeft: 2,
+                                  }}
+                                />
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </motion.div>
-                    ))}
+
+                          <div className="p-4">
+                            <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2 mb-1">
+                              {c.title}
+                            </h4>
+
+                            {/* {!c.children && ( */}
+                            <p
+                              className="text-[10px] mb-2.5"
+                              style={{ color: "#94a3b8" }}
+                            >
+                              {c.author || "Sujatha Kancharla"}
+                            </p>
+                            {/* )} */}
+
+                            {/* {!c.children && ( */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-1 text-[10px] font-bold text-amber-400">
+                                <Star
+                                  style={{
+                                    width: 11,
+                                    height: 11,
+                                    fill: "#f59e0b",
+                                    color: "#f59e0b",
+                                  }}
+                                />
+                                {c.rating || "4.8"} 
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs font-black text-slate-900">
+                                  {c.price}
+                                </span>
+
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  onClick={(e) => {
+                                    e.stopPropagation(); // IMPORTANT
+                                    setPreviewCourse(c);
+                                  }}
+                                  className="px-2 py-0.5 rounded-lg text-[10px] font-bold"
+                                  style={{
+                                    background: "rgba(29,78,216,0.08)",
+                                    color: "#1d4ed8",
+                                    border: "1.5px solid rgba(29,78,216,0.2)",
+                                  }}
+                                >
+                                  Preview
+                                </motion.button>
+                              </div>
+                            </div>
+                            {/* )} */}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
                   </div>
                 )}
 

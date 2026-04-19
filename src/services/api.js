@@ -76,8 +76,8 @@ export const CourseService = {
     return simulateRequest([
       {
         id: 101,
-        title: "Career Guidance Post 12th",
-        author: "Surabhi Dewra",
+        title: "Competitive Exams",
+        author: "Sujatha Kancharla",
         price: "₹1,499",
         rating: 4.9,
         category: "Competitive Exams",
@@ -85,11 +85,58 @@ export const CourseService = {
         tag: "Bestseller",
         img: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=600&q=80",
         vid: "Pow-yUGYbVs",
+        children: [
+          {
+            id: 11,
+            title: "GRE",
+            children: [
+              { id: 111, title: "Verbal Reasoning" },
+              { id: 112, title: "Quantitative Aptitude" },
+              { id: 113, title: "Analytical Writing" },
+            ],
+          },
+          {
+            id: 12,
+            title: "GMAT",
+            children: [
+              { id: 121, title: "Quantitative Reasoning" },
+              { id: 122, title: "Verbal Reasoning" },
+              { id: 123, title: "Data Insights" },
+            ],
+          },
+          {
+            id: 13,
+            title: "CAT",
+            children: [
+              { id: 131, title: "VARC" },
+              { id: 132, title: "DILR" },
+              { id: 133, title: "QA" },
+            ],
+          },
+          {
+            id: 14,
+            title: "UPSC",
+            children: [
+              { id: 141, title: "Optional" },
+              { id: 142, title: "General Studies" },
+              { id: 143, title: "CSAT" },
+            ],
+          },
+          {
+            id: 15,
+            title: "SPSC",
+            children: [
+              { id: 144, title: "Group 1" },
+              { id: 145, title: "Group 2" },
+              { id: 146, title: "Group 3 & 4" },
+            ],
+          },
+        ],
       },
       {
         id: 102,
-        title: "Engineering Entrance Prep",
-        author: "Surabhi Dewra",
+        title: "Intermediate Exams",
+        author: "Sujatha Kancharla",
         price: "₹999",
         rating: 4.8,
         category: "Competitive Exams",
@@ -97,11 +144,35 @@ export const CourseService = {
         tag: "Trending",
         img: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80",
         vid: "O12p01-ITCY",
+        children: [
+          {
+            id: 201,
+            title: "1st Year",
+            children: [
+              { id: 211, title: "MPC" },
+              { id: 212, title: "BiPC" },
+              { id: 213, title: "Commerce" },
+              { id: 214, title: "Arts" },
+              { id: 215, title: "Other" },
+            ],
+          },
+          {
+            id: 202,
+            title: "2nd Year",
+            children: [
+              { id: 221, title: "MPC" },
+              { id: 222, title: "BiPC" },
+              { id: 223, title: "Commerce" },
+              { id: 224, title: "Arts" },
+              { id: 225, title: "Other" },
+            ],
+          },
+        ],
       },
       {
         id: 103,
-        title: "Class 10 Math Complete Prep",
-        author: "Surabhi Dewra",
+        title: "Primary Education",
+        author: "Sujatha Kancharla",
         price: "₹1,499",
         rating: 4.7,
         category: "Secondary",
@@ -109,11 +180,63 @@ export const CourseService = {
         tag: "CBSE/SSC",
         img: "https://images.unsplash.com/photo-1606326608606-aa0b62935f2b?auto=format&fit=crop&w=600&q=80",
         vid: "p1Zle7wRG7E",
+        children: [
+          {
+            id: 301,
+            title: "Class 1",
+            children: [
+              { id: 311, title: "Mathematics" },
+              { id: 312, title: "Science" },
+              { id: 313, title: "Language" },
+              { id: 314, title: "Other" },
+            ],
+          },
+          {
+            id: 302,
+            title: "Class 2",
+            children: [
+              { id: 321, title: "Mathematics" },
+              { id: 322, title: "Basic Science" },
+              { id: 323, title: "Language" },
+              { id: 324, title: "Other" },
+            ],
+          },
+          {
+            id: 303,
+            title: "Class 3",
+            children: [
+              { id: 331, title: "Mathematics" },
+              { id: 332, title: "Science" },
+              { id: 333, title: "Language" },
+              { id: 334, title: "Other" },
+            ],
+          },
+          {
+            id: 304,
+            title: "Class 4",
+            children: [
+              { id: 341, title: "Mathematics" },
+              { id: 342, title: "Science" },
+              { id: 343, title: "Language" },
+              { id: 344, title: "Other" },
+            ],
+          },
+          {
+            id: 305,
+            title: "Class 5",
+            children: [
+              { id: 351, title: "Mathematics" },
+              { id: 352, title: "Science" },
+              { id: 353, title: "Language" },
+              { id: 354, title: "Other" },
+            ],
+          },
+        ],
       },
       {
         id: 104,
-        title: "UPSC GS & CSAT Masterclass",
-        author: "Surabhi Dewra",
+        title: "Secondary Education",
+        author: "Sujatha Kancharla",
         price: "₹4,999",
         rating: 4.9,
         category: "UPSC",
@@ -121,11 +244,37 @@ export const CourseService = {
         tag: "Comprehensive",
         img: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=600&q=80",
         vid: "5KgSWcPFXks",
+        children: [
+          {
+            id: 401,
+            title: "Class 9",
+            children: [
+              { id: 411, title: "Mathematics" },
+              { id: 412, title: "Social Studies" },
+              { id: 413, title: "Science" },
+              { id: 414, title: "Computer Science" },
+              { id: 415, title: "Languages" },
+              { id: 416, title: "Other" },
+            ],
+          },
+          {
+            id: 402,
+            title: "Class 10",
+            children: [
+              { id: 421, title: "Mathematics" },
+              { id: 422, title: "Social Studies" },
+              { id: 423, title: "Science" },
+              { id: 424, title: "Computer Science" },
+              { id: 425, title: "Languages" },
+              { id: 426, title: "Other" },
+            ],
+          },
+        ],
       },
       {
         id: 105,
-        title: "CAT VARC & DILR Intensive",
-        author: "Surabhi Dewra",
+        title: "Upper Primary",
+        author: "Sujatha Kancharla",
         price: "₹3,299",
         rating: 4.7,
         category: "Management",
@@ -133,18 +282,41 @@ export const CourseService = {
         tag: "Popular",
         img: "https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=600&q=80",
         vid: "Wy-_idAGHxc",
-      },
-      {
-        id: 106,
-        title: "Intermediate MPC Foundation",
-        author: "Surabhi Dewra",
-        price: "₹1,999",
-        rating: 4.8,
-        category: "Intermediate",
-        level: "1st Year",
-        tag: "Hot",
-        img: "https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=600&q=80",
-        vid: "4RjPZnatm8M",
+        children: [
+          {
+            id: 501,
+            title: "Class 6",
+            children: [
+              { id: 511, title: "Mathematics" },
+              { id: 512, title: "Science" },
+              { id: 513, title: "Social Studies" },
+              { id: 514, title: "Languages" },
+              { id: 515, title: "Other" },
+            ],
+          },
+          {
+            id: 502,
+            title: "Class 7",
+            children: [
+              { id: 521, title: "Mathematics" },
+              { id: 522, title: "Science" },
+              { id: 523, title: "Social Studies" },
+              { id: 524, title: "Languages" },
+              { id: 525, title: "Other" },
+            ],
+          },
+          {
+            id: 503,
+            title: "Class 8",
+            children: [
+              { id: 531, title: "Mathematics" },
+              { id: 532, title: "Science" },
+              { id: 533, title: "Social Studies" },
+              { id: 534, title: "Languages" },
+              { id: 535, title: "Other" },
+            ],
+          },
+        ],
       },
     ])
   },
@@ -154,7 +326,7 @@ export const CourseService = {
     return simulateRequest({
       id,
       title: "Career Guidance Masterclass",
-      instructor: "Surabhi Dewra",
+      instructor: "Sujatha Kancharla",
       tag: "CareerGuide",
       price: "₹1,499",
       originalPrice: "₹2,999",

@@ -75,11 +75,11 @@ export const LearnerHome = ({ user, setCurrentView, isTutor }) => {
   ];
 
   const marqueeItems = [
-    { title: "Top 5 Career Options", author: "Surabhi Dewra", rating: 4.8, oldPrice: "₹2,999", price: "₹999", vid: "Pow-yUGYbVs" },
-    { title: "Psychometric Testing", author: "Surabhi Dewra", rating: 4.9, oldPrice: "₹4,999", price: "₹1,499", vid: "O12p01-ITCY" },
-    { title: "After 12th Guidance", author: "Surabhi Dewra", rating: 4.7, oldPrice: "₹1,999", price: "₹499", vid: "p1Zle7wRG7E" },
-    { title: "Engineering Careers", author: "Surabhi Dewra", rating: 4.6, oldPrice: "₹3,499", price: "₹1,299", vid: "5KgSWcPFXks" },
-    { title: "Commerce Pathways", author: "Surabhi Dewra", rating: 4.8, oldPrice: "₹2,499", price: "₹799", vid: "Pow-yUGYbVs" },
+    { title: "Top 5 Career Options", author: "Sujatha Kancharla", rating: 4.8, oldPrice: "₹2,999", price: "₹999", vid: "Pow-yUGYbVs" },
+    { title: "Psychometric Testing", author: "Sujatha Kancharla", rating: 4.9, oldPrice: "₹4,999", price: "₹1,499", vid: "O12p01-ITCY" },
+    { title: "After 12th Guidance", author: "Sujatha Kancharla", rating: 4.7, oldPrice: "₹1,999", price: "₹499", vid: "p1Zle7wRG7E" },
+    { title: "Engineering Careers", author: "Sujatha Kancharla", rating: 4.6, oldPrice: "₹3,499", price: "₹1,299", vid: "5KgSWcPFXks" },
+    { title: "Commerce Pathways", author: "Sujatha Kancharla", rating: 4.8, oldPrice: "₹2,499", price: "₹799", vid: "Pow-yUGYbVs" },
   ];
 
   return (
@@ -301,7 +301,7 @@ export const LearnerExplore = () => {
               </div>
               <div className="p-3 flex flex-col flex-1">
                 <h4 className="font-bold text-sm leading-snug line-clamp-2 mb-1.5" style={{ color: C.dark }}>{c.title}</h4>
-                <p className="text-xs mb-2" style={{ color: "#94a3b8" }}>{c.author || "Surabhi Dewra"}</p>
+                <p className="text-xs mb-2" style={{ color: "#94a3b8" }}>{c.author || "Sujatha Kancharla"}</p>
                 <div className="mt-auto pt-2.5 flex items-center justify-between" style={{ borderTop: "1px solid rgba(29,78,216,0.05)" }}>
                   <span className="font-black text-base" style={{ color: C.dark }}>{c.price}</span>
                   <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={(e) => handleEnroll(c.id, e)} disabled={enrolling === c.id}

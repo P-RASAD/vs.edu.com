@@ -52,7 +52,7 @@ const DummyCourseService = {
     simulateRequest({
       id,
       title: "Career Guidance Masterclass",
-      instructor: "Surabhi Dewra",
+      instructor: "Sujatha Kancharla",
       tag: "CareerGuide",
       modules: [
         {

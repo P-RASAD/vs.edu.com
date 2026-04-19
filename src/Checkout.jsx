@@ -61,7 +61,7 @@ export default function Checkout() {
           await CartService.addToCart({
             id: 104,
             title: "UPSC GS & CSAT Masterclass",
-            instructor: "Surabhi Dewra",
+            instructor: "Sujatha Kancharla",
             price: 4999,
             img: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?auto=format&fit=crop&w=200&q=80",
           });
