@@ -247,9 +247,9 @@ export default function SuperAdmin() {
   const [allCourses, setAllCourses] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [selectedCourse, setSelectedCourse] = useState(null);
-  const displayCourses = selectedCourse?.children || allCourses;
-
+  const [courseStack, setCourseStack] = useState([]);
+  const current = courseStack[courseStack.length - 1];
+  const displayCourses = current?.children || allCourses;
   // Boot — load everything
   useEffect(() => {
     (async () => {
@@ -265,7 +265,6 @@ export default function SuperAdmin() {
         setUsers(u.data);
         setPending(p.data);
         setAllCourses(c.data);
-
         setTransactions(t.data);
       } catch {
         toast.error("Failed to load platform data", { style: toastErr });
@@ -378,7 +377,7 @@ export default function SuperAdmin() {
       label: "All Courses",
       icon: BookOpen,
       glow: GLOW.courses,
-      badge: allCourses.length,
+      badge: allCourses?.length || 0,
     },
     {
       id: "moderation",
@@ -565,13 +564,14 @@ export default function SuperAdmin() {
                 onClick={() => {
                   setActiveTab(item.id);
                   setReviewingCourse(null);
+                  setCourseStack([]); // 🔥 reset navigation
                 }}
                 className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all relative group"
                 style={{
                   background: isActive
                     ? `linear-gradient(135deg,${item.glow},${item.glow}cc)`
-                    : "transparent",
-                  border: `1.5px solid ${isActive ? "transparent" : "transparent"}`,
+                    : "rgba(0,0,0,0.02)",
+                  border: "1.5px solid transparent",
                   boxShadow: isActive ? `0 3px 14px ${item.glow}35` : "none",
                 }}
               >
@@ -1468,9 +1468,11 @@ export default function SuperAdmin() {
                   </div>
                 ) : (
                   <div>
-                    {selectedCourse && (
+                    {courseStack.length > 0 && (
                       <button
-                        onClick={() => setSelectedCourse(null)}
+                        onClick={() =>
+                          setCourseStack((prev) => prev.slice(0, -1))
+                        }
                         className="mb-4 text-xs text-blue-500 font-medium flex items-center gap-1 hover:text-blue-700 transition"
                       >
                         ← Back
@@ -1486,7 +1488,9 @@ export default function SuperAdmin() {
                           whileHover={{ y: -3 }}
                           onClick={() => {
                             if (c.children) {
-                              setSelectedCourse(c); // go deeper
+                              setCourseStack((prev) => [...prev, c]); // go deeper
+                            } else {
+                              setPreviewCourse(c); // final course
                             }
                           }}
                           className="rounded-2xl overflow-hidden relative group cursor-pointer"
